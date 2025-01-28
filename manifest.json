@@ -1,0 +1,11 @@
+{
+	"id": "lega4e-core-plugin",
+	"name": "Lega4e Core Plugin",
+	"version": "0.0.1",
+	"minAppVersion": "0.15.0",
+	"description": "some core functions of lega4e plugin library",
+	"author": "lega4e",
+	"authorUrl": "https://github.com/lega4e",
+	"fundingUrl": "https://github.com/lega4e/obsidian-plugin-core",
+	"isDesktopOnly": false
+}
