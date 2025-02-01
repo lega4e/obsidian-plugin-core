@@ -1,94 +1,45 @@
-# Obsidian Sample Plugin
+# Документация плагина
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+Этот плагин содержит несколько основных модулей, каждый из которых реализует свою функциональность. Ниже описаны функции основных классов: CategoriesPrinter, ParamsPrinter и ChartManager.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## DiaryPagesManager
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+Класс `DiaryPagesManager` отвечает за управление страницами дневника. Его функционал включает:
+- **Получение границ периода:** Методы `weekEdges`, `monthEdges`, `monthWeekEdges` вычисляют границы недели или месяца на основе имени файла.
+- **Получение списка страниц:** Методы `weekPages`, `monthPages`, `yearPages`, `monthsPages` и `weeksByMonthPages` возвращают отсортированные списки страниц дневника, удовлетворяющие заданным критериям.
+- **Формирование названий страниц:** Методы `nextDayPageName`, `prevDayPageName`, `weekPageName`, `monthPageName`, `yearPageName`, `nextWeekPageName`, `prevWeekPageName`, `nextMonthPageName`, `prevMonthPageName`, `nextYearPageName`, `prevYearPageName` генерируют имена для страниц следующего/предыдущего периода.
 
-## First time developing plugins?
+Эта функциональность позволяет пользователю динамически управлять данными дневника, получать периоды и автоматизировать навигацию между страницами.
 
-Quick starting guide for new plugin devs:
+## CategoriesPrinter
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+Класс `CategoriesPrinter` отвечает за:
+- **Загрузку данных категорий:** Метод `loadPages` принимает список страниц и типы паков, а также настраивает информацию для построения таблицы и диаграммы.
+- **Построение таблицы:** Метод `buildTable` формирует таблицу с названиями категорий и временем, используя API (в частности, метод `table` объекта `DvApi`).
+- **Вывод итоговой информации:** В зависимости от загруженных данных, после таблицы выводится суммарная информация (например, итоговое время) с учётом различных условий.
+- **Построение диаграммы:** Метод `buildChart` использует данные для построения круговой диаграммы (pie chart) через класс `ChartManager`.
 
-## Releasing new releases
+## ParamsPrinter
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+Класс `ParamsPrinter` предназначен для работы с параметрами, определёнными в YAML-файле, и включает следующие функции:
+- **Загрузка параметров:** Метод `loadParams` принимает список страниц (а также опционально предыдущие и следующие страницы) и вычисляет среднее значение для каждого параметра. Для расчёта среднего используется экземпляр класса `ParamsManager`.
+- **Очистка параметров:** Метод `clearParams` сбрасывает ранее загруженные параметры.
+- **Построение таблицы:** Метод `buildTable` генерирует таблицу с заголовками `Название`, `Среднее значение` и, если доступны, колонками с предыдущими и следующими значениями. В таблице:
+  - В первой колонке отображается название параметра.
+  - Во второй колонке — среднее значение (значение берётся из массива `value[0]`).
+  - Если заданы дополнительные данные (предыдущие/следующие), они также выводятся в отдельных столбцах.
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+## ChartManager
 
-## Adding your plugin to the community plugin list
+Класс `ChartManager` (находится в модуле charts) отвечает за построение графиков, в частности:
+- **Построение диаграмм:** Он предоставляет методы для создания диаграмм (например, круговых диаграмм). Данные, передаваемые в `ChartManager`, позволяют построить визуальное представление распределения по категориям.
+- **Настройка отображения:** Через объект настроек можно задать параметры диаграммы (цвета, метки, подсказки (tooltips)), что позволяет адаптировать график под нужды пользователя.
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+## Заключение
 
-## How to use
+Плагин объединяет функциональность по анализу категорий, параметров и построению диаграмм. Используя классы `CategoriesPrinter`, `ParamsPrinter` и `ChartManager`, пользователь получает инструменты для:
+- Визуальной проверки работы категорий (таблицы с категориями и диаграммы).
+- Анализа параметров (вычисление средних значений и формирование соответствующих таблиц).
+- Построения наглядной диаграммы с возможностью тонкой настройки отображения данных.
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
-
-## Manually installing the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
-```
-
-If you have multiple URLs, you can also do:
-
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
-
-## API Documentation
-
-See https://github.com/obsidianmd/obsidian-api
+Эта документация предназначена для разработчиков, желающих понять и расширить функциональность плагина.
