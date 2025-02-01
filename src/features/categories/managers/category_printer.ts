@@ -128,6 +128,29 @@ export class CategoryPrinter {
     }
   }
 
+  buildChart(): void {
+    if (!this.chartInfo || this.chartInfo[0][1].length == 0) {
+      this.dv.paragraph("\nНет данных для построения диаграммы...");
+    } else if (this.chartInfo.length == 1) {
+      const chart = this.charts.makePieChart(
+        this.chartInfo[0],
+        this.manager.getOtherCategory(),
+      );
+
+      this.dv.el("div", chart);
+    } else {
+      const widget = new TabsLayoutWidget(
+        undefined,
+        this.chartInfo.map((info) => ({
+          title: info[0].category!.name!,
+          content: () =>
+            this.charts.makePieChart(info, this.manager.getOtherCategory()),
+        })),
+      );
+      this.dv.el("div", widget.container);
+    }
+  }
+
   private _calcTotalIntervalTime(pages: Record<string, any>[]): number | null {
     let value = pages
       .map((page) => this._calcDailyTotalTime(page))
@@ -158,35 +181,6 @@ export class CategoryPrinter {
     }
 
     return end - start;
-  }
-
-  buildChart(): void {
-    if (!this.chartInfo || this.chartInfo[0][1].length == 0) {
-      this.dv.paragraph("\nНет данных для построения диаграммы...");
-    } else if (this.chartInfo.length == 1) {
-      const chart = this.charts.makePieChart(
-        this.chartInfo[0],
-        this.manager.getOtherCategory(),
-      );
-
-      this.dv.el("div", chart);
-    } else {
-      const tabsContainer = document.createElement("div");
-      tabsContainer.textContent = "Содержимое";
-      tabsContainer.className = "my-class";
-      tabsContainer.id = "tabs-container-id";
-      tabsContainer.style.marginTop = "8px";
-
-      new TabsLayoutWidget(
-        tabsContainer,
-        this.chartInfo.map((info) => ({
-          title: info[0].category!.name!,
-          content: () =>
-            this.charts.makePieChart(info, this.manager.getOtherCategory()),
-        })),
-      );
-      this.dv.el("div", tabsContainer);
-    }
   }
 
   private _item2tip(value: number, totalMinutes: number): string {

@@ -6,7 +6,7 @@ export interface TabData {
 }
 
 export class TabsLayoutWidget {
-  private container: HTMLElement;
+  public container: HTMLElement;
   private tabs: TabData[];
   private activeTabIndex: number = 0;
   private buttonsContainer: HTMLElement;
@@ -17,8 +17,14 @@ export class TabsLayoutWidget {
    * @param container HTMLElement, в котором будет строиться виджет.
    * @param tabs Массив объектов TabData, содержащих заголовки и содержимое для вкладок.
    */
-  constructor(container: HTMLElement, tabs: TabData[]) {
-    this.container = container;
+  constructor(container?: HTMLElement, tabs: TabData[] = []) {
+    if (container) {
+      this.container = container;
+    } else {
+      this.container = document.createElement("div");
+      this.container.className = "tabs-layout-widget-container";
+      this.container.style.marginTop = "8px";
+    }
     this.tabs = tabs;
     this.init();
   }
