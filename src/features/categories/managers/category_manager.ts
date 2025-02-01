@@ -94,7 +94,7 @@ export class CategoryManager {
   private _clearCategoriesItems() {
     for (const pack of this.packs) {
       for (const category of pack.categories) {
-        category.items = [];
+        category.clear();
       }
     }
   }

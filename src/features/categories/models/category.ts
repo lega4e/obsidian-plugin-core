@@ -23,6 +23,7 @@ export class Category {
   public color: string | undefined;
   public skipOnDiagramm: boolean;
   public items: Item[] = [];
+  public calculatedItem?: Item;
 
   constructor(
     name: string,
@@ -38,38 +39,43 @@ export class Category {
     this.skipOnDiagramm = skipOnDiagramm;
   }
 
-  toString() {
-    return (
-      `Категория: ${this.name}` +
-      `${
-        this.parents.length > 0
-          ? `; Родительские категории: ` +
-            `${this.parents.map((p) => p.name).join(", ")}`
-          : ""
-      }`
-    );
+  clear(recursive: boolean = false) {
+    this.items = [];
+    this.calculatedItem = undefined;
+    if (recursive) {
+      this.children.forEach((c) => c.clear(true));
+    }
   }
 
   summarizeWithItems(): [Item, Item[]] {
-    let items: Item[] = [];
+    return [this.summarize(), this.calcItems()];
+  }
 
-    if (this.items.length != 0) {
-      items = this.items;
-    } else {
-      items = this.children.map((c) => c.summarize()).flat();
+  calcItems(): Item[] {
+    if (this.items.length == 0) {
+      this.items = this.children
+        .map((c) => c.summarize())
+        .flat()
+        .filter((item) => item.totalMinutes > 0);
     }
-
-    return [
-      new Item(
-        this,
-        items.reduce((acc, item) => acc + item.totalMinutes, 0),
-        items.map((item) => item.comment).join(", "),
-      ),
-      items,
-    ];
+    return this.items;
   }
 
   summarize(): Item {
-    return this.summarizeWithItems()[0];
+    if (this.calculatedItem) {
+      return this.calculatedItem;
+    }
+
+    this.calculatedItem = new Item(
+      this,
+      this.calcItems().reduce((acc, item) => acc + item.totalMinutes, 0),
+      this.calcItems()
+        .map((item) => item.comment)
+        .filter((c) => c && c != "")
+        .join(", "),
+      this.calcItems(),
+    );
+
+    return this.calculatedItem;
   }
 }

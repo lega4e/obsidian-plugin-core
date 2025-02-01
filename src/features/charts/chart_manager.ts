@@ -5,7 +5,11 @@ export interface PieChartDataUnit {
   label: string;
   value: number;
   color?: string;
-  tip: string | ((value: number) => string);
+  tip:
+    | string
+    | string[]
+    | ((value: any) => string)
+    | ((value: any) => string[]);
 }
 
 export interface LineChartDataUnit {

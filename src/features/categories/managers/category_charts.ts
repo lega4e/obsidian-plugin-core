@@ -31,13 +31,13 @@ export class CategoryCharts {
         label: item.category!.name!,
         value: item.totalMinutes,
         color: item.category!.color!,
-        tip: this._item2tip(item.totalMinutes, root.totalMinutes),
+        tip: this._item2tip(item.totalMinutes, root.totalMinutes, [item]),
       })),
       {
         label: otherCategory.name,
         value: 0,
         color: otherCategory.color!,
-        tip: (value: number) => this._item2tip(value, root.totalMinutes),
+        tip: (value: number) => this._item2tip(value, root.totalMinutes, []),
       },
     );
 
@@ -59,12 +59,27 @@ export class CategoryCharts {
    * @param totalMinutes общее значение для вычисления процента.
    * @returns Строка с отформатированным значением и процентом.
    */
-  private _item2tip(value: number, totalMinutes: number): string {
-    return (
+  private _item2tip(
+    value: number,
+    totalMinutes: number,
+    items: Item[],
+  ): string[] {
+    return [
       formatMinutes(value) +
-      "; " +
-      ((value / totalMinutes) * 100).toFixed(1).replace(".", ",") +
-      "%"
-    );
+        "; " +
+        ((value / totalMinutes) * 100).toFixed(1).replace(".", ",") +
+        "%",
+      ...items.flatMap((item) =>
+        item
+          .prettyLeafs()
+          .map(
+            (c) =>
+              c.category!.name! +
+              (c.comment && c.comment != "" ? ` (${c.comment})` : "") +
+              " " +
+              c.pretty(),
+          ),
+      ),
+    ];
   }
 }

@@ -14,25 +14,57 @@ export class Item {
   public category: Category | undefined;
   public totalMinutes: number;
   public comment: string | undefined;
-  public color: string | undefined;
+  public children: Item[] = [];
 
   constructor(
     category: Category | undefined,
     totalMinutes: number,
     comment: string | undefined = undefined,
-    color: string | undefined = undefined,
+    children: Item[] = [],
   ) {
     this.category = category;
     this.totalMinutes = totalMinutes;
     this.comment = comment;
-    this.color = color;
-  }
-
-  toString() {
-    return this.pretty();
+    this.children = children;
   }
 
   pretty(): string {
     return formatMinutes(this.totalMinutes);
+  }
+
+  leafs(): Item[] {
+    if (this.children.length == 0) {
+      return [this];
+    }
+
+    return this.children.flatMap((c) => c.leafs());
+  }
+
+  prettyLeafs(): Item[] {
+    function key(item: Item): string {
+      return (
+        item.category!.name! +
+        (item.comment && item.comment != "" ? ` (${item.comment})` : "")
+      );
+    }
+
+    const leafs = this.leafs();
+    const items = new Map<string, Item>();
+
+    for (const item of leafs) {
+      let existedItem = items.get(key(item));
+      if (existedItem) {
+        existedItem.totalMinutes += item.totalMinutes;
+      } else {
+        items.set(
+          key(item),
+          new Item(item.category, item.totalMinutes, item.comment),
+        );
+      }
+    }
+
+    return Array.from(items.values()).sort(
+      (a, b) => b.totalMinutes - a.totalMinutes,
+    );
   }
 }
