@@ -46,7 +46,7 @@ export class DiaryPagesManager {
         .startOf("month")
         .startOf("isoWeek")
         .format("YYYY-MM-DD");
-      
+
       monthEnd = moment(filename, "YYYY-MM")
         .endOf("month")
         .endOf("isoWeek")
@@ -203,11 +203,11 @@ export class DiaryPagesManager {
     if (filename.match(/\d{4}-W\d{2}/)) {
       const weekNum = parseInt(filename.slice(6));
       const year = parseInt(filename.slice(0, 4));
-      
+
       if (weekNum === 52) {
         return `${year + 1}-W01`;
       }
-      
+
       return moment(filename, "YYYY-[W]WW").add(1, "week").format("YYYY-[W]WW");
     }
     return moment(filename, "YYYY-MM-DD").add(1, "week").format("YYYY-[W]WW");

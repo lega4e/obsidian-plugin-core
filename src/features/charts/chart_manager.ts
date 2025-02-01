@@ -122,7 +122,7 @@ export class ChartManager {
           data: unit.values,
           borderColor: this._generateColor(unit.label, unit.color),
           fill: false,
-					tension: 0.4,
+          tension: 0.4,
         })),
       },
       options: {

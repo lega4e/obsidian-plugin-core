@@ -36,7 +36,9 @@ export class ParamsManager {
           rawValues.push(val);
         }
       }
-      paramsList.push(new Param(paramYaml.name, paramYaml.order, rawValues, paramYaml.color));
+      paramsList.push(
+        new Param(paramYaml.name, paramYaml.order, rawValues, paramYaml.color),
+      );
     }
 
     // Сортируем по order

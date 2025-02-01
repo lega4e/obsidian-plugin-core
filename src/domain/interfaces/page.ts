@@ -1,6 +1,6 @@
 export interface Page {
-	frontmatter: any;
-	file: {
-		name: string;
-	};
+  frontmatter: any;
+  file: {
+    name: string;
+  };
 }
