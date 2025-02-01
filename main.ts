@@ -2,6 +2,7 @@ import { Plugin, PluginSettingTab, Setting, App } from "obsidian";
 import { DvApi } from "src/domain/interfaces/dv_api";
 import { CategoryPrinter } from "src/features/categories/managers/category_printer";
 import { DiaryPagesManager } from "src/features/diary/diary_pages_manager";
+import { DiaryChartsManager } from "src/features/diary_charts/diary_charts_manager";
 import { ParamsPrinter } from "src/features/params/params_printer";
 import { TabCreator } from "src/ui/tabs/tab_creator";
 
@@ -44,6 +45,12 @@ export default class Lega4eCorePlugin extends Plugin {
       paramsPrinter: (dv: DvApi) =>
         new ParamsPrinter(dv, this.settings.params_path),
       tabCreator: (dv: DvApi) => new TabCreator(dv),
+      diaryChartsManager: (dv: DvApi) =>
+        new DiaryChartsManager(
+          dv,
+          this.settings.params_path,
+          this.settings.categories_path,
+        ),
     };
   }
 }

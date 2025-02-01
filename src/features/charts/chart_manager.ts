@@ -4,11 +4,23 @@ import ChartDataLabels from "chartjs-plugin-datalabels";
 export interface PieChartDataUnit {
   label: string;
   value: number;
-  color: string;
+  color?: string;
   tip: string | ((value: number) => string);
 }
 
+export interface LineChartDataUnit {
+  label: string;
+  values: number[];
+  color?: string;
+}
+
 export class ChartManager {
+  /**
+   * Строит круговую диаграмму.
+   * @param data Массив объектов с данными для каждого набора.
+   * @param otherDataUnit Дополнительный объект, показывающий как рисовать "Остальное".
+   * @returns HTMLCanvasElement с построенной диаграммой.
+   */
   pie(
     data: PieChartDataUnit[],
     otherDataUnit?: PieChartDataUnit,
@@ -34,9 +46,9 @@ export class ChartManager {
       data.push(otherDataUnit);
     }
 
-    const colors = labels.map((label) =>
-      data.find((item) => item.label == label),
-    );
+    const colors = labels
+      .map((label) => data.find((item) => item.label == label))
+      .map((item) => this._generateColor(item!.label, item!.color));
 
     new Chart(canvas, {
       type: "pie",
@@ -45,36 +57,7 @@ export class ChartManager {
         datasets: [
           {
             data: values,
-            backgroundColor: colors.map((item) => {
-              if (!item?.color) {
-                const hash = item!.label.split("").reduce((acc, char) => {
-                  return char.charCodeAt(0) + ((acc << 5) - acc);
-                }, 0);
-                const c = (hash & 0x00ffffff).toString(16).toUpperCase();
-                let color = "#" + "00000".substring(0, 6 - c.length) + c;
-
-                // Приглушаем цвет, смешивая с серым
-                const r = parseInt(color.slice(1, 3), 16);
-                const g = parseInt(color.slice(3, 5), 16);
-                const b = parseInt(color.slice(5, 7), 16);
-
-                const mixRatio = 0.3; // Степень приглушения
-                const grayValue = 128; // Средний серый
-
-                const newR = Math.round(
-                  r * (1 - mixRatio) + grayValue * mixRatio,
-                );
-                const newG = Math.round(
-                  g * (1 - mixRatio) + grayValue * mixRatio,
-                );
-                const newB = Math.round(
-                  b * (1 - mixRatio) + grayValue * mixRatio,
-                );
-
-                return `rgba(${newR}, ${newG}, ${newB}, 0.8)`;
-              }
-              return item.color;
-            }),
+            backgroundColor: colors,
             borderColor: "#999",
             borderWidth: 1,
           },
@@ -117,6 +100,48 @@ export class ChartManager {
     return canvas;
   }
 
+  /**
+   * Строит график с несколькими наборами данных.
+   * @param units Массив объектов с данными для каждого набора.
+   * @returns HTMLCanvasElement с построенным графиком.
+   */
+  public line(
+    xlabels: string[],
+    units: LineChartDataUnit[],
+    minY?: number,
+    maxY?: number,
+  ): HTMLCanvasElement {
+    const canvas = document.createElement("canvas");
+
+    new Chart(canvas, {
+      type: "line",
+      data: {
+        labels: xlabels,
+        datasets: units.map((unit) => ({
+          label: unit.label,
+          data: unit.values,
+          borderColor: this._generateColor(unit.label, unit.color),
+          fill: false,
+					tension: 0.4,
+        })),
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: true },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: maxY,
+            min: minY,
+          },
+        },
+      },
+    });
+    return canvas;
+  }
+
   private _shrinkToOther(
     labels: string[],
     values: number[],
@@ -142,5 +167,28 @@ export class ChartManager {
     }
 
     return [labels, values];
+  }
+
+  // Новый приватный метод для генерации цвета
+  private _generateColor(label: string, color?: string): string {
+    if (color) {
+      return color;
+    }
+    const hash = label.split("").reduce((acc, char) => {
+      return char.charCodeAt(0) + ((acc << 5) - acc);
+    }, 0);
+    const c = (hash & 0x00ffffff).toString(16).toUpperCase();
+    let generatedColor = "#" + "00000".substring(0, 6 - c.length) + c;
+
+    // Приглушаем цвет, смешивая с серым
+    const r = parseInt(generatedColor.slice(1, 3), 16);
+    const g = parseInt(generatedColor.slice(3, 5), 16);
+    const b = parseInt(generatedColor.slice(5, 7), 16);
+    const mixRatio = 0.3;
+    const grayValue = 128;
+    const newR = Math.round(r * (1 - mixRatio) + grayValue * mixRatio);
+    const newG = Math.round(g * (1 - mixRatio) + grayValue * mixRatio);
+    const newB = Math.round(b * (1 - mixRatio) + grayValue * mixRatio);
+    return `rgba(${newR}, ${newG}, ${newB}, 0.8)`;
   }
 }

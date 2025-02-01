@@ -24,7 +24,7 @@ export class ParamsManager {
 
   // Публичная функция для получения массива объектов Param,
   // где value содержит массив чисел из значений каждой страницы.
-  public getParametersArray(pages: Record<string, any>[]): Param[] {
+  getParametersArray(pages: Record<string, any>[]): Param[] {
     const paramsList: Param[] = [];
 
     for (const paramYaml of this.paramsYaml.params) {
@@ -36,7 +36,7 @@ export class ParamsManager {
           rawValues.push(val);
         }
       }
-      paramsList.push(new Param(paramYaml.name, paramYaml.order, rawValues));
+      paramsList.push(new Param(paramYaml.name, paramYaml.order, rawValues, paramYaml.color));
     }
 
     // Сортируем по order
@@ -47,7 +47,7 @@ export class ParamsManager {
 
   // Публичная функция для вычисления среднего значения для каждого параметра.
   // Возвращает список объектов Param, где value – это число (среднее).
-  public calculateAverages(pages: Record<string, any>[]): Param[] {
+  calculateAverages(pages: Record<string, any>[]): Param[] {
     const rawParams = this.getParametersArray(pages);
     const averagedParams: Param[] = [];
 

@@ -131,17 +131,15 @@ export class CategoryPrinter {
   buildChart(): void {
     if (!this.chartInfo || this.chartInfo[0][1].length == 0) {
       this.dv.paragraph("\nНет данных для построения диаграммы...");
-    } else if (this.chartInfo.length == 1) {
-      const chart = this.charts.makePieChart(
-        this.chartInfo[0],
-        this.manager.getOtherCategory(),
-      );
+      return;
+    }
 
-      this.dv.el("div", chart);
+    if (this.chartInfo.length == 1) {
+      this.dv.el("div", this.getCharts()[0][1]);
     } else {
       const widget = new TabsLayoutWidget(
         undefined,
-        this.chartInfo.map((info) => ({
+        this.chartInfo.map((info, i) => ({
           title: info[0].category!.name!,
           content: () =>
             this.charts.makePieChart(info, this.manager.getOtherCategory()),
@@ -149,6 +147,17 @@ export class CategoryPrinter {
       );
       this.dv.el("div", widget.container);
     }
+  }
+
+  getCharts(): [string, HTMLElement][] {
+    if (this.chartInfo == null) {
+      return [];
+    }
+
+    return this.chartInfo.map((info) => [
+      info[0].category!.name!,
+      this.charts.makePieChart(info, this.manager.getOtherCategory()),
+    ]);
   }
 
   private _calcTotalIntervalTime(pages: Record<string, any>[]): number | null {
