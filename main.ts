@@ -2,13 +2,16 @@ import { Plugin, PluginSettingTab, Setting, App } from "obsidian";
 import { DvApi } from "src/domain/interfaces/dv_api";
 import { CategoryPrinter } from "src/features/categories/managers/category_printer";
 import { DiaryPagesManager } from "src/features/diary/diary_pages_manager";
+import { ParamsPrinter } from "src/features/params/params_printer";
 
 interface Lega4eCorePluginSettings {
   categories_path: string;
+  params_path: string;
 }
 
 const DEFAULT_SETTINGS: Lega4eCorePluginSettings = {
   categories_path: "Categories.md",
+  params_path: "Params.md",
 };
 
 export default class Lega4eCorePlugin extends Plugin {
@@ -34,9 +37,11 @@ export default class Lega4eCorePlugin extends Plugin {
     console.log("Lega4eCorePlugin registerApi");
     (this.app as any).plugins.plugins["lega4e-core-plugin"].api = {
       sayHello: (name: string) => `Hello, ${name}!`,
+      diaryPagesManager: (dv: DvApi) => new DiaryPagesManager(dv),
       categoryPrinter: (dv: DvApi) =>
         new CategoryPrinter(dv, this.settings.categories_path),
-      diaryPagesManager: (dv: DvApi) => new DiaryPagesManager(dv),
+      paramsPrinter: (dv: DvApi) =>
+        new ParamsPrinter(dv, this.settings.params_path),
     };
   }
 }
@@ -58,10 +63,23 @@ class Lega4eCorePluginSettingTab extends PluginSettingTab {
       .setDesc("Path to categories md-YAML file")
       .addText((text) =>
         text
-          .setPlaceholder("Enter path")
+          .setPlaceholder("Enter categories path")
           .setValue(this.plugin.settings.categories_path)
           .onChange(async (value) => {
             this.plugin.settings.categories_path = value;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName("Params Path")
+      .setDesc("Path to params md-YAML file")
+      .addText((text) =>
+        text
+          .setPlaceholder("Enter params path")
+          .setValue(this.plugin.settings.params_path)
+          .onChange(async (value) => {
+            this.plugin.settings.params_path = value;
             await this.plugin.saveSettings();
           }),
       );
