@@ -3,6 +3,7 @@ import { DvApi } from "src/domain/interfaces/dv_api";
 import { CategoryPrinter } from "src/features/categories/managers/category_printer";
 import { DiaryPagesManager } from "src/features/diary/diary_pages_manager";
 import { ParamsPrinter } from "src/features/params/params_printer";
+import { TabCreator } from "src/ui/tabs/tab_creator";
 
 interface Lega4eCorePluginSettings {
   categories_path: string;
@@ -42,6 +43,7 @@ export default class Lega4eCorePlugin extends Plugin {
         new CategoryPrinter(dv, this.settings.categories_path),
       paramsPrinter: (dv: DvApi) =>
         new ParamsPrinter(dv, this.settings.params_path),
+      tabCreator: (dv: DvApi) => new TabCreator(dv),
     };
   }
 }
