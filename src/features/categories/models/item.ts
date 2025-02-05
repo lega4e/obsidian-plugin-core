@@ -40,11 +40,13 @@ export class Item {
     return this.children.flatMap((c) => c.leafs());
   }
 
-  prettyLeafs(): Item[] {
+  prettyLeafs(discardComments: boolean = false): Item[] {
     function key(item: Item): string {
       return (
         item.category!.name! +
-        (item.comment && item.comment != "" ? ` (${item.comment})` : "")
+        (discardComments && item.comment && item.comment != ""
+          ? ` (${item.comment})`
+          : "")
       );
     }
 

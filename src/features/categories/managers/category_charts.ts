@@ -4,6 +4,7 @@ import { Category } from "../models/category";
 
 export class CategoryCharts {
   private charts: ChartManager;
+  public discardComments: boolean = false;
 
   /**
    * Конструктор:
@@ -71,11 +72,13 @@ export class CategoryCharts {
         "%",
       ...items.flatMap((item) =>
         item
-          .prettyLeafs()
+          .prettyLeafs(this.discardComments)
           .map(
             (c) =>
               c.category!.name! +
-              (c.comment && c.comment != "" ? ` (${c.comment})` : "") +
+              (this.discardComments && c.comment && c.comment != ""
+                ? ` (${c.comment})`
+                : "") +
               " " +
               c.pretty(),
           ),

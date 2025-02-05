@@ -11,6 +11,9 @@ interface CategoryPackYaml {
 }
 
 interface CategoriesYaml {
+  options: {
+    discardComments: boolean;
+  };
   categories_packs: CategoryPackYaml[];
   otherCategory: {
     name: string;

@@ -4,6 +4,7 @@ import { CategoryPrinter } from "src/features/categories/managers/category_print
 import { DiaryPagesManager } from "src/features/diary/diary_pages_manager";
 import { DiaryChartsManager } from "src/features/diary_charts/diary_charts_manager";
 import { ParamsPrinter } from "src/features/params/params_printer";
+import { TestBuilder } from "src/features/test/test_builder";
 import { TabCreator } from "src/ui/tabs/tab_creator";
 
 interface Lega4eCorePluginSettings {
@@ -51,6 +52,7 @@ export default class Lega4eCorePlugin extends Plugin {
           this.settings.params_path,
           this.settings.categories_path,
         ),
+      testBuilder: (dv: DvApi) => new TestBuilder(dv),
     };
   }
 }

@@ -22,6 +22,7 @@ export class CategoryPrinter {
     this.dv = dv;
     this.manager = manager ?? new CategoryManager(dv, categoriesPath);
     this.charts = charts ?? new CategoryCharts();
+    this.charts.discardComments = this.manager.discardComments;
   }
 
   loadPages(

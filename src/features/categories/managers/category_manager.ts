@@ -7,6 +7,7 @@ export class CategoryManager {
   private packs: CategoryPack[] = [];
   private certainPack: CategoryPack | null = null;
   private otherCategory: Category | null = null;
+  public discardComments: boolean = false;
 
   constructor(dv: DvApi, categoriesPath: string) {
     this.dv = dv;
@@ -44,6 +45,7 @@ export class CategoryManager {
     }
 
     const parsedData = file as unknown as CategoriesYaml;
+    this.discardComments = parsedData.options.discardComments;
 
     this.otherCategory = new Category(
       parsedData.otherCategory.name,
