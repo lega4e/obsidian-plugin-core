@@ -27,14 +27,14 @@ export class DiaryChartsManager {
     this.categoryPrinter.clearPages();
 
     const widget = new TabsLayoutWidget(undefined, [
-      {
-        title: "Параметры",
-        content: () => paramsChart,
-      },
       ...categoryCharts.map(([name, chart]) => ({
         title: { Общие: "Общие категории", Категории: "Подкатегории" }[name]!,
         content: () => chart,
       })),
+      {
+        title: "Параметры",
+        content: () => paramsChart,
+      },
     ]);
     this.dv.el("div", widget.container);
   }

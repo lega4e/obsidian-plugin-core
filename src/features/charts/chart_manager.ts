@@ -13,8 +13,9 @@ export interface PieChartDataUnit {
 
 export interface LineChartDataUnit {
   label: string;
-  values: number[];
+  values: [string, number][];
   color?: string;
+  hidden: boolean;
 }
 
 export class ChartManager {
@@ -115,7 +116,6 @@ export class ChartManager {
    * @returns HTMLCanvasElement с построенным графиком.
    */
   public line(
-    xlabels: string[],
     units: LineChartDataUnit[],
     minY?: number,
     maxY?: number,
@@ -125,13 +125,13 @@ export class ChartManager {
     new Chart(canvas, {
       type: "line",
       data: {
-        labels: xlabels,
         datasets: units.map((unit) => ({
           label: unit.label,
           data: unit.values,
           borderColor: this._generateColor(unit.label, unit.color),
           fill: false,
           tension: 0.4,
+          hidden: unit.hidden,
         })),
       },
       options: {

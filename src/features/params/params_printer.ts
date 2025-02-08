@@ -76,19 +76,19 @@ export class ParamsPrinter {
     ];
     const rows = this.averagedParams.map((param) => [
       param.name,
-      this._prettyValue(param.value),
+      this._prettyValue(param.values),
       ...(this.previousAveragedParams
         ? [
             this._prettyValue(
               this.previousAveragedParams?.find((p) => p.name == param.name)
-                ?.value,
+                ?.values,
             ),
           ]
         : []),
       ...(this.nextAveragedParams
         ? [
             this._prettyValue(
-              this.nextAveragedParams?.find((p) => p.name == param.name)?.value,
+              this.nextAveragedParams?.find((p) => p.name == param.name)?.values,
             ),
           ]
         : []),
@@ -103,22 +103,22 @@ export class ParamsPrinter {
     }
 
     return this.charts.line(
-      this.pages.map((page) => page.file.name),
       this.paramsArray.map((param) => ({
         label: param.name,
-        values: param.value,
+        values: param.values,
         color: param.color,
+        hidden: param.hiddenOnChart || false,
       })),
       0,
       11,
     );
   }
 
-  private _prettyValue(value?: number[]): string {
+  private _prettyValue(value?: [string, number][]): string {
     return !value
       ? ""
       : value.length > 0
-        ? value[0].toFixed(1).replace(/\./g, ",")
+        ? value[0][1].toFixed(1).replace(/\./g, ",")
         : "undefined";
   }
 }

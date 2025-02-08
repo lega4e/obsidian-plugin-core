@@ -2,8 +2,8 @@ import { DvApi } from "src/domain/interfaces/dv_api";
 import {
   AutocompleteOption,
   createDropdownWidget,
-} from "src/ui/input/AutocompleteInput";
-import { AutocompleteInput } from "src/ui/input/AutocompleteInput";
+} from "src/ui/input/autocomplete_input";
+import { AutocompleteInput } from "src/ui/input/autocomplete_input";
 
 export class TestBuilder {
   private dv: DvApi;
