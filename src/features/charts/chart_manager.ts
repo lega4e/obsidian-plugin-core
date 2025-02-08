@@ -8,8 +8,7 @@ export interface PieChartDataUnit {
   tip:
     | string
     | string[]
-    | ((value: any) => string)
-    | ((value: any) => string[]);
+    | ((value: any, labels?: string[]) => string | string[]);
 }
 
 export interface LineChartDataUnit {
@@ -39,9 +38,10 @@ export class ChartManager {
       data.map((row) => row.label),
       data.map((row) => row.value),
     ];
+    let otherLabels: string[] = [];
 
     if (otherDataUnit) {
-      [labels, values] = this._shrinkToOther(
+      [labels, values, otherLabels] = this._shrinkToOther(
         labels,
         values,
         otherDataUnit,
@@ -86,11 +86,16 @@ export class ChartManager {
           tooltip: {
             callbacks: {
               label: (tooltipItem) => {
-                let tip = data.find(
-                  (item) => item.label == tooltipItem.label,
-                )?.tip;
+                let item = data.find((item) => item.label == tooltipItem.label);
+                let tip = item?.tip;
+
                 if (typeof tip == "function") {
-                  return tip(tooltipItem.raw as number);
+                  return tip(
+                    tooltipItem.raw as number,
+                    item?.label == otherDataUnit?.label
+                      ? otherLabels
+                      : undefined,
+                  );
                 }
                 return tip;
               },
@@ -151,7 +156,8 @@ export class ChartManager {
     values: number[],
     otherDataUnit: PieChartDataUnit,
     ratio: number,
-  ): [string[], number[]] {
+  ): [string[], number[], string[]] {
+    let otherLabels: string[] = [];
     const total = values.reduce((a, b) => a + b, 0);
 
     let i = values.length;
@@ -166,11 +172,13 @@ export class ChartManager {
       values[i] = values.slice(i, values.length).reduce((a, b) => a + b);
       values = Array.from(values.slice(0, i + 1));
 
+      otherLabels = Array.from(labels.slice(i, labels.length));
       labels[i] = otherDataUnit.label;
+      console.log("otherLabels", otherLabels);
       labels = Array.from(labels.slice(0, i + 1));
     }
 
-    return [labels, values];
+    return [labels, values, otherLabels];
   }
 
   // Новый приватный метод для генерации цвета

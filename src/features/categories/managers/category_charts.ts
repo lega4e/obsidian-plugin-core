@@ -38,7 +38,16 @@ export class CategoryCharts {
         label: otherCategory.name,
         value: 0,
         color: otherCategory.color!,
-        tip: (value: number) => this._item2tip(value, root.totalMinutes, []),
+        tip: (value: number, labels?: string[]) =>
+          this._item2tip(
+            value,
+            root.totalMinutes,
+            Array.from(
+              labels?.map(
+                (label) => items.find((item) => item.category!.name == label)!,
+              ) ?? [],
+            ),
+          ),
       },
     );
 
@@ -70,19 +79,18 @@ export class CategoryCharts {
         "; " +
         ((value / totalMinutes) * 100).toFixed(1).replace(".", ",") +
         "%",
-      ...items.flatMap((item) =>
-        item
-          .prettyLeafs(this.discardComments)
-          .map(
-            (c) =>
-              c.category!.name! +
-              (this.discardComments && c.comment && c.comment != ""
-                ? ` (${c.comment})`
-                : "") +
-              " " +
-              c.pretty(),
-          ),
-      ),
+      ...items
+        .flatMap((item) => item.prettyLeafs(this.discardComments))
+        .sort((a, b) => b.totalMinutes - a.totalMinutes)
+        .map(
+          (c) =>
+            c.category!.name! +
+            (this.discardComments && c.comment && c.comment != ""
+              ? ` (${c.comment})`
+              : "") +
+            " " +
+            c.pretty(),
+        ),
     ];
   }
 }
