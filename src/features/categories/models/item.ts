@@ -4,28 +4,31 @@ export function formatMinutes(totalMinutes: number): string {
   const minutes = totalMinutes % 60;
   const hours = Math.floor(totalMinutes / 60);
 
-  return (
+  return totalMinutes == 0 ? "0" : (
     `${hours != 0 ? hours.toString() + "ч." : ""} ` +
     `${minutes != 0 || hours == 0 ? minutes.toString() + "м." : ""}`
   ).trim();
 }
 
 export class Item {
-  public category: Category | undefined;
+  public category?: Category;
   public totalMinutes: number;
-  public comment: string | undefined;
+  public comment?: string;
   public children: Item[] = [];
+  public date?: string;
 
   constructor(
     category: Category | undefined,
     totalMinutes: number,
-    comment: string | undefined = undefined,
+    comment?: string,
     children: Item[] = [],
+    date?: string,
   ) {
     this.category = category;
     this.totalMinutes = totalMinutes;
     this.comment = comment;
     this.children = children;
+    this.date = date;
   }
 
   pretty(): string {
@@ -60,7 +63,13 @@ export class Item {
       } else {
         items.set(
           key(item),
-          new Item(item.category, item.totalMinutes, item.comment),
+          new Item(
+            item.category,
+            item.totalMinutes,
+            item.comment,
+            [],
+            item.date,
+          ),
         );
       }
     }

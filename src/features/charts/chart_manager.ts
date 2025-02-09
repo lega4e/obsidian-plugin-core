@@ -1,5 +1,6 @@
 import Chart from "chart.js/auto";
 import ChartDataLabels from "chartjs-plugin-datalabels";
+import { formatMinutes } from "../categories/models/item";
 
 export interface PieChartDataUnit {
   label: string;
@@ -75,7 +76,7 @@ export class ChartManager {
             display: false,
           },
           datalabels: {
-            color: "#fff", // Цвет текста
+            color: "#fff",
             formatter: (_, context) => {
               return context.chart.data.labels?.[context.dataIndex] ?? "NONE";
             },
@@ -119,6 +120,9 @@ export class ChartManager {
     units: LineChartDataUnit[],
     minY?: number,
     maxY?: number,
+    labelCallback?: (category: string, value: number, date: string) => string[],
+    tickStepSize?: number,
+    tickCallback?: (value: number) => string,
   ): HTMLCanvasElement {
     const canvas = document.createElement("canvas");
 
@@ -138,12 +142,26 @@ export class ChartManager {
         responsive: true,
         plugins: {
           legend: { display: true },
+          tooltip: {
+            callbacks: {
+              label: (context) =>
+                labelCallback?.(
+                  context.dataset.label || "",
+                  context.parsed.y,
+                  context.label,
+                ) ?? context.formattedValue,
+            },
+          },
         },
         scales: {
           y: {
             beginAtZero: true,
             max: maxY,
             min: minY,
+            ticks: {
+              stepSize: tickStepSize,
+              callback: tickCallback,
+            },
           },
         },
       },
@@ -174,7 +192,6 @@ export class ChartManager {
 
       otherLabels = Array.from(labels.slice(i, labels.length));
       labels[i] = otherDataUnit.label;
-      console.log("otherLabels", otherLabels);
       labels = Array.from(labels.slice(0, i + 1));
     }
 

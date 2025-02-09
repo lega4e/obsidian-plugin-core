@@ -63,6 +63,56 @@ export class CategoryCharts {
     return chartContainer;
   }
 
+  makeLineChart(chartInfo: [string, [Item, Item[]]][]): HTMLElement {
+    const items = chartInfo.map(([_, [__, items]]) => items).flat();
+    const categories = items.map((item) => item.category!.name!).unique();
+
+    const units = categories.map((category) => ({
+      label: category,
+      values: chartInfo.map(
+        ([date, [_, items]]) =>
+          [
+            date,
+            items.find((item) => item.category!.name == category)
+              ?.totalMinutes ?? 0,
+          ] as [string, number],
+      ),
+      color: items.find((item) => item.category?.name == category)!.category!
+        .color!,
+      hidden: items.find((item) => item.category?.name == category)!.category!
+        .hideOnLineChart,
+    }));
+
+    const canvas = this.charts.line(
+      units,
+      undefined,
+      undefined,
+      (category, value, date) => {
+        let info = chartInfo.find(([key, _]) => key == date);
+        if (!info) {
+          return [category];
+        }
+
+        let [root, items] = info[1];
+        let item = items.find((item) => item.category!.name == category);
+        return item
+          ? this._item2tip(value, root.totalMinutes, [item])
+          : [category];
+      },
+      60,
+      formatMinutes,
+    );
+
+    const chartContainer = document.createElement("div");
+    chartContainer.className = "category-line-chart";
+    chartContainer.style.maxHeight = "380px";
+    chartContainer.style.width = "100%";
+    chartContainer.style.height = "100%";
+    chartContainer.appendChild(canvas);
+
+    return chartContainer;
+  }
+
   /**
    * Форматирует значение в виде строки с процентным соотношением.
    * @param value значение для форматирования.

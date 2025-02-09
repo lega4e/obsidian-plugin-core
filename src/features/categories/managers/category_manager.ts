@@ -14,18 +14,31 @@ export class CategoryManager {
     this._parseCategories(categoriesPath);
   }
 
-  calculate(pages: Record<string, any>[], packType: string): [Item, Item[]] {
+  loadPages(pages: Record<string, any>[]): void {
+    this._loadItems(pages);
+  }
+
+  clearPages(): void {
+    this._clearCategoriesItems();
+  }
+
+  calculate(packType: string, date?: string): [Item, Item[]] {
     const pack = this.packs.find((p) => p.type == packType);
     if (!pack) {
       throw new Error(`Pack type ${packType} not found`);
     }
 
-    this._loadItems(pages);
     const rootCategory = new Category(pack.prettyName, [], pack.categories);
-    let [root, items] = rootCategory.summarizeWithItems();
+    let [root, items] = rootCategory.summarizeWithItems(date);
     items = items.filter((item) => item.totalMinutes != 0);
     items = items.sort((a, b) => b.totalMinutes - a.totalMinutes);
     return [root, items];
+  }
+
+  calculateArray(packType: string, dates: string[]): [string, [Item, Item[]]][] {
+    return dates.map((date) => 
+      [date, this.calculate(packType, date)],
+    );
   }
 
   getOtherCategory(): Category {
@@ -78,6 +91,7 @@ export class CategoryManager {
           [],
           categoryYaml.color,
           categoryYaml.skipOnDiagramm === true,
+          categoryYaml.hideOnLineChart ?? true,
         );
 
         parents.forEach((parent) => parent.children.push(category));
@@ -103,31 +117,37 @@ export class CategoryManager {
 
   private _loadItems(pages: Record<string, any>[]): void {
     this._clearCategoriesItems();
-    const entries = pages
-      .map((page) => page["Времяучёт"])
-      .filter((entry) => entry)
-      .flat();
+    pages = pages.filter((page) => page["Времяучёт"]);
 
-    for (const entry of entries) {
-      const match = entry.match(
-        /^([^\d()]*)\s*(?:\((.*?)\))?\s*(?:(\d+)ч\.?)?\s*(?:(\d+)м\.?)?$/,
-      );
-
-      if (match) {
-        const category = match[1].trim();
-        const minutes =
-          parseInt(match[3] || "0") * 60 + parseInt(match[4] || "0");
-
-        const certainCategory = this.certainPack?.find(category);
-        if (!certainCategory) {
-          throw new Error(`Не найдено конкретной категории ${category}`);
-        }
-
-        certainCategory.items.push(
-          new Item(certainCategory, minutes, match[2]),
+    for (const page of pages) {
+      const entries = page["Времяучёт"];
+      for (const entry of entries) {
+        const match = entry.match(
+          /^([^\d()]*)\s*(?:\((.*?)\))?\s*(?:(\d+)ч\.?)?\s*(?:(\d+)м\.?)?$/,
         );
-      } else {
-        throw new Error(`error with match ${entry} | ${match}`);
+
+        if (match) {
+          const category = match[1].trim();
+          const minutes =
+            parseInt(match[3] || "0") * 60 + parseInt(match[4] || "0");
+
+          const certainCategory = this.certainPack?.find(category);
+          if (!certainCategory) {
+            throw new Error(`Не найдено конкретной категории ${category}`);
+          }
+
+          certainCategory.items.push(
+            new Item(
+              certainCategory,
+              minutes,
+              match[2],
+              undefined,
+              page.file.name,
+            ),
+          );
+        } else {
+          throw new Error(`error with match ${entry} | ${match}`);
+        }
       }
     }
   }

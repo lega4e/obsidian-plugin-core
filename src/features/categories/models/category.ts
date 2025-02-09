@@ -22,8 +22,10 @@ export class Category {
   public children: Category[];
   public color: string | undefined;
   public skipOnDiagramm: boolean;
+  public hideOnLineChart: boolean;
   public items: Item[] = [];
-  public calculatedItem?: Item;
+  public calculatedItem: { [key: string]: Item } = {};
+  public calculatedItems: { [key: string]: Item[] } = {};
 
   constructor(
     name: string,
@@ -31,51 +33,64 @@ export class Category {
     children: Category[] = [],
     color: string | undefined = undefined,
     skipOnDiagramm: boolean = false,
+    hideOnLineChart: boolean = false,
   ) {
     this.name = name;
     this.parents = parents;
     this.children = children;
     this.color = color;
     this.skipOnDiagramm = skipOnDiagramm;
+    this.hideOnLineChart = hideOnLineChart;
   }
 
   clear(recursive: boolean = false) {
     this.items = [];
-    this.calculatedItem = undefined;
+    this.calculatedItem = {};
+    this.calculatedItems = {};
     if (recursive) {
       this.children.forEach((c) => c.clear(true));
     }
   }
 
-  summarizeWithItems(): [Item, Item[]] {
-    return [this.summarize(), this.calcItems()];
+  summarizeWithItems(date?: string): [Item, Item[]] {
+    return [this.summarize(date), this.calcItems(date)];
   }
 
-  calcItems(): Item[] {
+  calcItems(date?: string): Item[] {
+    if (this.calculatedItems[date ?? ""]) {
+      return this.calculatedItems[date ?? ""];
+    }
+
     if (this.items.length == 0) {
-      this.items = this.children
-        .map((c) => c.summarize())
+      this.calculatedItems[date ?? ""] = this.children
+        .map((c) => c.summarize(date))
         .flat()
         .filter((item) => item.totalMinutes > 0);
+    } else {
+      this.calculatedItems[date ?? ""] = !date
+        ? this.items
+        : this.items.filter((item) => item.date == date);
     }
-    return this.items;
+
+    return this.calculatedItems[date ?? ""];
   }
 
-  summarize(): Item {
-    if (this.calculatedItem) {
-      return this.calculatedItem;
+  summarize(date?: string): Item {
+    if (this.calculatedItem[date ?? ""]) {
+      return this.calculatedItem[date ?? ""];
     }
 
-    this.calculatedItem = new Item(
+    this.calculatedItem[date ?? ""] = new Item(
       this,
-      this.calcItems().reduce((acc, item) => acc + item.totalMinutes, 0),
-      this.calcItems()
+      this.calcItems(date).reduce((acc, item) => acc + item.totalMinutes, 0),
+      this.calcItems(date)
         .map((item) => item.comment)
         .filter((c) => c && c != "")
         .join(", "),
-      this.calcItems(),
+      this.calcItems(date),
+      date,
     );
 
-    return this.calculatedItem;
+    return this.calculatedItem[date ?? ""];
   }
 }

@@ -6,6 +6,7 @@ interface CategoryPackYaml {
     color?: string;
     parents?: string[];
     skipOnDiagramm?: boolean;
+    hideOnLineChart?: boolean;
   }>;
   isCertain?: boolean;
 }
