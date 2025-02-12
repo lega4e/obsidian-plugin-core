@@ -3,6 +3,7 @@ import { CategoryManager } from "./category_manager";
 import { formatMinutes, Item } from "../models/item";
 import { CategoryCharts } from "./category_charts";
 import { TabsLayoutWidget } from "src/ui/tabs/tab_layout_widget";
+import { TableManager } from "src/features/tables/table_manager";
 
 export class CategoryPrinter {
   private dv: DvApi;
@@ -91,41 +92,12 @@ export class CategoryPrinter {
   }
 
   buildTable(): void {
-    if (this.infoPacks == null) {
-      throw new Error("Info packs not loaded");
-    }
-
-    const titles = this.infoPacks
-      .map((info) => [info[0].category?.name!, "Время"])
-      .reduce((acc, curr) => acc.concat(curr), []);
-    const rowsPack = this.infoPacks.map((info) => info[1]);
-
-    const rows = [];
-    for (
-      let i = 0;
-      i < Math.max(...rowsPack.map((items) => items.length));
-      i++
-    ) {
-      rows.push(
-        rowsPack
-          .map((items) =>
-            items[i]
-              ? [
-                  items[i].category?.name!,
-                  this._item2tip(
-                    items[i].totalMinutes,
-                    this.infoPacks![0][0].totalMinutes,
-                  ),
-                ]
-              : ["", ""],
-          )
-          .flat(),
-      );
-    }
-
-    const info = this.infoPacks[0];
-
+    const { titles, rows } = this._makeTable();
     this.dv.table(titles, rows);
+  }
+
+  buildTimeNote(): void {
+    const info = this.infoPacks![0];
 
     if (info[0].totalMinutes == null) {
       return;
@@ -184,6 +156,28 @@ export class CategoryPrinter {
     }
   }
 
+  buildChartsAndTable(): void {
+    const table = this.getTable();
+    const charts = this.getCharts();
+    const historyCharts = this.getHistoryCharts();
+
+    const widget = new TabsLayoutWidget(undefined, [
+      ...charts.map((chart) => ({
+        title: chart[0],
+        content: () => chart[1],
+      })),
+      ...historyCharts.map((chart) => ({
+        title: "История",
+        content: () => chart,
+      })),
+      {
+        title: "Таблица",
+        content: () => table,
+      },
+    ]);
+    this.dv.el("div", widget.container);
+  }
+
   getCharts(): [string, HTMLElement][] {
     if (this.chartInfo == null) {
       return [];
@@ -203,6 +197,47 @@ export class CategoryPrinter {
     return this.historyInfo.map((history) =>
       this.charts.makeLineChart(history),
     );
+  }
+
+  getTable(): HTMLElement {
+    const { titles, rows } = this._makeTable();
+    return TableManager.makeTable(titles, rows);
+  }
+
+  private _makeTable(): { titles: string[]; rows: string[][] } {
+    if (this.infoPacks == null) {
+      throw new Error("Info packs not loaded");
+    }
+
+    const titles = this.infoPacks
+      .map((info) => [info[0].category?.name!, "Время"])
+      .reduce((acc, curr) => acc.concat(curr), []);
+    const rowsPack = this.infoPacks.map((info) => info[1]);
+
+    const rows = [];
+    for (
+      let i = 0;
+      i < Math.max(...rowsPack.map((items) => items.length));
+      i++
+    ) {
+      rows.push(
+        rowsPack
+          .map((items) =>
+            items[i]
+              ? [
+                  items[i].category?.name!,
+                  this._item2tip(
+                    items[i].totalMinutes,
+                    this.infoPacks![0][0].totalMinutes,
+                  ),
+                ]
+              : ["", ""],
+          )
+          .flat(),
+      );
+    }
+
+    return { titles, rows };
   }
 
   private _calcTotalIntervalTime(pages: Record<string, any>[]): number | null {
