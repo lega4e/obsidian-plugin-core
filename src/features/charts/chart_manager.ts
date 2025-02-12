@@ -123,13 +123,31 @@ export class ChartManager {
     labelCallback?: (category: string, value: number, date: string) => string[],
     tickStepSize?: number,
     tickCallback?: (value: number) => string,
+    maxPoints: number = 15,
   ): HTMLCanvasElement {
     const canvas = document.createElement("canvas");
+
+    let aggregatedUnits = units;
+
+    const allXValues = units.map((unit) => unit.values.map(([x, y]) => x));
+    const firstXValues = allXValues[0];
+    const allSameX = allXValues.every(
+      (xValues) =>
+        xValues.length === firstXValues.length &&
+        xValues.every((x, i) => x === firstXValues[i]),
+    );
+
+    if (allSameX) {
+      aggregatedUnits = units.map((unit) => ({
+        ...unit,
+        values: this._aggregateDataPoints(unit.values, maxPoints),
+      }));
+    }
 
     new Chart(canvas, {
       type: "line",
       data: {
-        datasets: units.map((unit) => ({
+        datasets: aggregatedUnits.map((unit) => ({
           label: unit.label,
           data: unit.values,
           borderColor: this._generateColor(unit.label, unit.color),
@@ -219,5 +237,29 @@ export class ChartManager {
     const newG = Math.round(g * (1 - mixRatio) + grayValue * mixRatio);
     const newB = Math.round(b * (1 - mixRatio) + grayValue * mixRatio);
     return `rgba(${newR}, ${newG}, ${newB}, 0.8)`;
+  }
+
+  // Добавляем новый приватный метод для агрегации точек
+  private _aggregateDataPoints(
+    points: [string, number][],
+    maxPoints: number,
+  ): [string, number][] {
+    if (points.length <= maxPoints) {
+      return points;
+    }
+
+    const chunkSize = Math.ceil(points.length / maxPoints);
+    const aggregated: [string, number][] = [];
+
+    for (let i = 0; i < points.length; i += chunkSize) {
+      const chunk = points.slice(i, i + chunkSize);
+      const avgValue =
+        chunk.reduce((sum, [_, val]) => sum + val, 0) / chunk.length;
+      // Берём среднюю точку из чанка как метку времени
+      const middlePoint = chunk[Math.floor(chunk.length / 2)][0];
+      aggregated.push([middlePoint, avgValue]);
+    }
+
+    return aggregated;
   }
 }

@@ -11,7 +11,7 @@ export class CategoryPrinter {
   private infoPacks: [Item, Item[]][] | null = null;
   private totalIntervalTime: number | null = null;
   private chartInfo: [Item, Item[]][] | null = null;
-  private historyInfo?: [string, [Item, Item[]]][];
+  private historyInfo: [string, [Item, Item[]]][][] = [];
 
   constructor(
     dv: DvApi,
@@ -29,18 +29,22 @@ export class CategoryPrinter {
     pages: Record<string, any>[],
     packTypes: string[],
     chartPackTypes: string[],
-    historyPackType?: string,
+    historyPackTypes?: string[],
   ): void {
     this.manager.loadPages(pages);
     this.infoPacks = packTypes.map((packType: string) =>
       this.manager.calculate(packType),
     );
 
-    if (historyPackType) {
-      this.historyInfo = this.manager.calculateArray(
-        historyPackType,
-        pages.map((page) => page.file.name),
+    if (historyPackTypes && historyPackTypes.length > 0) {
+      this.historyInfo = historyPackTypes.map((packType: string) =>
+        this.manager.calculateArray(
+          packType,
+          pages.map((page) => page.file.name),
+        ),
       );
+    } else {
+      this.historyInfo = [];
     }
 
     this.totalIntervalTime = this._calcTotalIntervalTime(pages);
@@ -72,7 +76,7 @@ export class CategoryPrinter {
     this.infoPacks = null;
     this.totalIntervalTime = null;
     this.chartInfo = [];
-    this.historyInfo = undefined;
+    this.historyInfo = [];
   }
 
   checkCanBuild(pages: Record<string, any>[]): boolean {
@@ -162,11 +166,23 @@ export class CategoryPrinter {
   }
 
   buildHistoryChart(): void {
-    if (this.historyInfo == null) {
+    if (!this.historyInfo || this.historyInfo.length === 0) {
+      this.dv.paragraph("\nНет данных для построения графика истории...");
       return;
     }
 
-    this.dv.el("div", this.charts.makeLineChart(this.historyInfo));
+    if (this.historyInfo.length === 1) {
+      this.dv.el("div", this.charts.makeLineChart(this.historyInfo[0]));
+    } else {
+      const widget = new TabsLayoutWidget(
+        undefined,
+        this.historyInfo.map((history, i) => ({
+          title: history[0][0] || `История ${i + 1}`,
+          content: () => this.charts.makeLineChart(history),
+        })),
+      );
+      this.dv.el("div", widget.container);
+    }
   }
 
   getCharts(): [string, HTMLElement][] {
@@ -180,12 +196,14 @@ export class CategoryPrinter {
     ]);
   }
 
-  getHistoryChart(): HTMLElement {
-    if (this.historyInfo == null) {
-      return document.createElement("div");
+  getHistoryCharts(): HTMLElement[] {
+    if (this.historyInfo == null || this.historyInfo.length === 0) {
+      return [];
     }
 
-    return this.charts.makeLineChart(this.historyInfo);
+    return this.historyInfo.map((history) =>
+      this.charts.makeLineChart(history),
+    );
   }
 
   private _calcTotalIntervalTime(pages: Record<string, any>[]): number | null {

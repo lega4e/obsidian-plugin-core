@@ -22,9 +22,12 @@ export class DiaryChartsManager {
     const paramsChart = this.paramsPrinter.getChart();
     this.paramsPrinter.clearParams();
 
-    this.categoryPrinter.loadPages(pages, [], chartCategoryTypes, 'common');
+    this.categoryPrinter.loadPages(pages, [], chartCategoryTypes, [
+      "common",
+      "global",
+    ]);
     const categoryCharts = this.categoryPrinter.getCharts();
-    const historyChart = this.categoryPrinter.getHistoryChart();
+    const historyCharts = this.categoryPrinter.getHistoryCharts();
     this.categoryPrinter.clearPages();
 
     const widget = new TabsLayoutWidget(undefined, [
@@ -32,10 +35,10 @@ export class DiaryChartsManager {
         title: { Общие: "Общие категории", Категории: "Подкатегории" }[name]!,
         content: () => chart,
       })),
-      {
-        title: "История",
-        content: () => historyChart,
-      },
+      ...historyCharts.map((chart, index) => ({
+        title: ['История', 'История обобщённая'][index], 
+        content: () => chart,
+      })),
       {
         title: "Параметры",
         content: () => paramsChart,
