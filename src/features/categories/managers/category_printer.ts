@@ -13,6 +13,7 @@ export class CategoryPrinter {
   private totalIntervalTime: number | null = null;
   private chartInfo: [Item, Item[]][] | null = null;
   private historyInfo: [string, [Item, Item[]]][][] = [];
+  private pages: Record<string, any>[] = [];
 
   constructor(
     dv: DvApi,
@@ -32,6 +33,7 @@ export class CategoryPrinter {
     chartPackTypes: string[],
     historyPackTypes?: string[],
   ): void {
+    this.pages = pages;
     this.manager.loadPages(pages);
     this.infoPacks = packTypes.map((packType: string) =>
       this.manager.calculate(packType),
@@ -101,18 +103,43 @@ export class CategoryPrinter {
 
     if (info[0].totalMinutes == null) {
       return;
-    } else if (this.totalIntervalTime == null) {
-      this.dv.span(`Итого: ${info[0].pretty()}`);
-    } else {
-      this.dv.span(
-        `Итого: ${info[0].pretty()}\nДолжно: ${formatMinutes(this.totalIntervalTime)}` +
-          (info[0].totalMinutes < this.totalIntervalTime
-            ? `\nНехватка: ${formatMinutes(this.totalIntervalTime - info[0].totalMinutes)}`
-            : this.totalIntervalTime == info[0].totalMinutes
-              ? "\nТютелька в тютельку"
-              : `\nИзбыток: ${formatMinutes(info[0].totalMinutes - this.totalIntervalTime)}`),
-      );
     }
+
+    const container = document.createElement("div");
+    const totalIntervalTime = this.totalIntervalTime;
+    const start = this._timeToMinutes(this.pages[0]["Подъём"]);
+
+    const updateContent = () => {
+      let totalTime = totalIntervalTime;
+
+      if (totalTime == null) {
+        if (start == null) {
+          container.textContent = `Итого: ${info[0].pretty()}`;
+          return;
+        }
+
+        let now = new Date();
+        let end = now.getHours() * 60 + now.getMinutes();
+        if (end < start) {
+          end += 24 * 60;
+        }
+        totalTime = end - start;
+      }
+
+      container.innerHTML =
+        `Итого: ${info[0].pretty()}<br/>Должно: ${formatMinutes(totalTime)}` +
+        (info[0].totalMinutes < totalTime
+          ? `<br/>Нехватка: ${formatMinutes(totalTime - info[0].totalMinutes)}`
+          : totalTime == info[0].totalMinutes
+            ? "<br/>Тютелька в тютельку"
+            : `<br/>Избыток: ${formatMinutes(info[0].totalMinutes - totalTime)}`);
+    };
+
+    container.style.paddingBottom = "8px";
+
+    updateContent();
+    setInterval(updateContent, 10000);
+    this.dv.el("div", container);
   }
 
   buildChart(): void {
@@ -245,23 +272,7 @@ export class CategoryPrinter {
       .map((page) => this._calcDailyTotalTime(page))
       .reduce((acc, curr) => (acc ?? 0) + (curr ?? 0), 0);
 
-    if (value != 0) {
-      return value;
-    } else if (pages.length == 1) {
-      let start = this._timeToMinutes(pages[0]["Подъём"]);
-      if (start == null) {
-        return null;
-      }
-
-      let now = new Date();
-      let end = now.getHours() * 60 + now.getMinutes();
-      if (end < start) {
-        end += 24 * 60;
-      }
-      return end - start;
-    } else {
-      return null;
-    }
+    return value == 0 ? null : value;
   }
 
   private _calcDailyTotalTime(page: Record<string, any>): number | null {
