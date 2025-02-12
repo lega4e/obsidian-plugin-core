@@ -196,7 +196,7 @@ export class ChartManager {
     let otherLabels: string[] = [];
     const total = values.reduce((a, b) => a + b, 0);
 
-    let i = values.length;
+    let i = values.length - 1;
     for (; i >= 0; --i) {
       if (values[i] / total > ratio) {
         break;
@@ -204,7 +204,7 @@ export class ChartManager {
     }
     i += 1;
 
-    if (i < values.length) {
+    if (i < values.length - 1) {
       values[i] = values.slice(i, values.length).reduce((a, b) => a + b);
       values = Array.from(values.slice(0, i + 1));
 
