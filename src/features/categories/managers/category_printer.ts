@@ -131,14 +131,13 @@ export class CategoryPrinter {
       return;
     } else if (this.totalIntervalTime == null) {
       this.dv.span(`Итого: ${info[0].pretty()}`);
-      return;
     } else {
       this.dv.span(
         `Итого: ${info[0].pretty()}\nДолжно: ${formatMinutes(this.totalIntervalTime)}` +
           (info[0].totalMinutes < this.totalIntervalTime
             ? `\nНехватка: ${formatMinutes(this.totalIntervalTime - info[0].totalMinutes)}`
             : this.totalIntervalTime == info[0].totalMinutes
-              ? "Тютелька в тютельку"
+              ? "\nТютелька в тютельку"
               : `\nИзбыток: ${formatMinutes(info[0].totalMinutes - this.totalIntervalTime)}`),
       );
     }
@@ -211,21 +210,28 @@ export class CategoryPrinter {
       .map((page) => this._calcDailyTotalTime(page))
       .reduce((acc, curr) => (acc ?? 0) + (curr ?? 0), 0);
 
-    return value == 0 ? null : value;
-  }
-
-  private _calcDailyTotalTime(page: Record<string, any>): number | null {
-    function timeToMinutes(time: string | null): number | null {
-      if (time == null || time.trim() == "") {
+    if (value != 0) {
+      return value;
+    } else if (pages.length == 1) {
+      let start = this._timeToMinutes(pages[0]["Подъём"]);
+      if (start == null) {
         return null;
       }
 
-      let [hours, minutes] = time.split(":").map(Number);
-      return hours * 60 + minutes;
+      let now = new Date();
+      let end = now.getHours() * 60 + now.getMinutes();
+      if (end < start) {
+        end += 24 * 60;
+      }
+      return end - start;
+    } else {
+      return null;
     }
+  }
 
-    let start = timeToMinutes(page["Подъём"]);
-    let end = timeToMinutes(page["Отбой"]);
+  private _calcDailyTotalTime(page: Record<string, any>): number | null {
+    let start = this._timeToMinutes(page["Подъём"]);
+    let end = this._timeToMinutes(page["Отбой"]);
 
     if (start == null || end == null) {
       return null;
@@ -236,6 +242,15 @@ export class CategoryPrinter {
     }
 
     return end - start;
+  }
+
+  private _timeToMinutes(time: string | null): number | null {
+    if (time == null || time.trim() == "") {
+      return null;
+    }
+
+    let [hours, minutes] = time.split(":").map(Number);
+    return hours * 60 + minutes;
   }
 
   private _item2tip(value: number, totalMinutes: number): string {
