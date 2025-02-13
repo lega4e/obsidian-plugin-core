@@ -1,38 +1,23 @@
-import { DvApi } from "src/domain/interfaces/dv_api";
+import type { DvApi } from "src/domain/interfaces/dv_api";
 import { ParamsManager } from "src/features/params/params_manager";
 import { Param } from "src/features/params/models/param";
 import { ChartManager } from "../charts/chart_manager";
+import { inject, injectable } from "inversify";
+import { TYPES } from "src/domain/di/types";
 
+@injectable()
 export class ParamsPrinter {
-  private dv: DvApi;
-  private paramsManager: ParamsManager;
-  private charts: ChartManager;
   private pages: Record<string, any>[];
   private paramsArray: Param[];
   private averagedParams?: Param[];
   private previousAveragedParams?: Param[];
   private nextAveragedParams?: Param[];
 
-  // Если paramsManager не передан, то создаётся новый, используя имя файла с параметрами.
   constructor(
-    dv: DvApi,
-    paramsFile?: string,
-    paramsManager?: ParamsManager,
-    charts?: ChartManager,
-  ) {
-    this.dv = dv;
-    this.charts = charts || new ChartManager();
-    if (paramsManager) {
-      this.paramsManager = paramsManager;
-    } else {
-      if (!paramsFile) {
-        throw new Error(
-          "Параметр paramsFile должен быть указан, если ParamsManager не передан",
-        );
-      }
-      this.paramsManager = new ParamsManager(dv, paramsFile);
-    }
-  }
+    @inject(TYPES.DvApi) private dv: () => DvApi,
+    @inject(TYPES.ParamsManager) private paramsManager: ParamsManager,
+    @inject(TYPES.ChartManager) private charts: ChartManager,
+  ) {}
 
   // loadParams – вычисляет средние значения параметров на основе списка страниц.
   loadParams(
@@ -88,13 +73,14 @@ export class ParamsPrinter {
       ...(this.nextAveragedParams
         ? [
             this._prettyValue(
-              this.nextAveragedParams?.find((p) => p.name == param.name)?.values,
+              this.nextAveragedParams?.find((p) => p.name == param.name)
+                ?.values,
             ),
           ]
         : []),
     ]);
 
-    this.dv.table(headers, rows);
+    this.dv().table(headers, rows);
   }
 
   getChart(): HTMLElement {

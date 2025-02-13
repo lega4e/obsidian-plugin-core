@@ -1,11 +1,7 @@
 import { Plugin, PluginSettingTab, Setting, App } from "obsidian";
+import { container } from "src/domain/di/di";
+import { TYPES } from "src/domain/di/types";
 import { DvApi } from "src/domain/interfaces/dv_api";
-import { CategoryPrinter } from "src/features/categories/managers/category_printer";
-import { DiaryPagesManager } from "src/features/diary/diary_pages_manager";
-import { DiaryChartsManager } from "src/features/diary_charts/diary_charts_manager";
-import { ParamsPrinter } from "src/features/params/params_printer";
-import { TestBuilder } from "src/features/test/test_builder";
-import { TabCreator } from "src/ui/tabs/tab_creator";
 
 interface Lega4eCorePluginSettings {
   categories_path: string;
@@ -19,6 +15,7 @@ const DEFAULT_SETTINGS: Lega4eCorePluginSettings = {
 
 export default class Lega4eCorePlugin extends Plugin {
   settings: Lega4eCorePluginSettings;
+  dv?: DvApi;
 
   async onload() {
     await this.loadSettings();
@@ -40,19 +37,28 @@ export default class Lega4eCorePlugin extends Plugin {
     console.log("Lega4eCorePlugin registerApi");
     (this.app as any).plugins.plugins["lega4e-core-plugin"].api = {
       sayHello: (name: string) => `Hello, ${name}!`,
-      diaryPagesManager: (dv: DvApi) => new DiaryPagesManager(dv),
-      categoryPrinter: (dv: DvApi) =>
-        new CategoryPrinter(dv, this.settings.categories_path),
-      paramsPrinter: (dv: DvApi) =>
-        new ParamsPrinter(dv, this.settings.params_path),
-      tabCreator: (dv: DvApi) => new TabCreator(dv),
-      diaryChartsManager: (dv: DvApi) =>
-        new DiaryChartsManager(
-          dv,
-          this.settings.params_path,
-          this.settings.categories_path,
-        ),
-      testBuilder: (dv: DvApi) => new TestBuilder(dv),
+      init: (dv: DvApi) => {
+        this.dv = dv;
+
+        if (container.isBound(TYPES.DvApi)) {
+          container.unbind(TYPES.DvApi);
+        }
+
+        container
+          .bind<() => DvApi>(TYPES.DvApi)
+          .toConstantValue(() => this.dv!);
+        container
+          .rebind(TYPES.CategoriesPath)
+          .toConstantValue(this.settings.categories_path);
+        container
+          .rebind(TYPES.ParamsPath)
+          .toConstantValue(this.settings.params_path);
+      },
+      diaryPagesManager: () => container.get(TYPES.DiaryPagesManager),
+      categoryPrinter: () => container.get(TYPES.CategoryPrinter),
+      paramsPrinter: () => container.get(TYPES.ParamsPrinter),
+      diaryChartsManager: () => container.get(TYPES.DiaryChartsManager),
+      tableManager: () => container.get(TYPES.TableManager),
     };
   }
 }
@@ -79,6 +85,7 @@ class Lega4eCorePluginSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.categories_path = value;
             await this.plugin.saveSettings();
+            container.rebind(TYPES.CategoriesPath).toConstantValue(value);
           }),
       );
 
@@ -92,6 +99,7 @@ class Lega4eCorePluginSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.params_path = value;
             await this.plugin.saveSettings();
+            container.rebind(TYPES.ParamsPath).toConstantValue(value);
           }),
       );
   }

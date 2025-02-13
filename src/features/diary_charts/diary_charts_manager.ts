@@ -1,18 +1,17 @@
-import { DvApi } from "src/domain/interfaces/dv_api";
+import type { DvApi } from "src/domain/interfaces/dv_api";
 import { CategoryPrinter } from "../categories/managers/category_printer";
 import { ParamsPrinter } from "../params/params_printer";
 import { TabsLayoutWidget } from "src/ui/tabs/tab_layout_widget";
+import { inject, injectable } from "inversify";
+import { TYPES } from "src/domain/di/types";
 
+@injectable()
 export class DiaryChartsManager {
-  private paramsPrinter: ParamsPrinter;
-  private categoryPrinter: CategoryPrinter;
-  private dv: DvApi;
-
-  constructor(dv: DvApi, paramsFile: string, categoriesPath: string) {
-    this.dv = dv;
-    this.paramsPrinter = new ParamsPrinter(dv, paramsFile);
-    this.categoryPrinter = new CategoryPrinter(dv, categoriesPath);
-  }
+  constructor(
+    @inject(TYPES.DvApi) private dv: () => DvApi,
+    @inject(TYPES.ParamsPrinter) private paramsPrinter: ParamsPrinter,
+    @inject(TYPES.CategoryPrinter) private categoryPrinter: CategoryPrinter,
+  ) {}
 
   buildCharts(
     pages: Record<string, any>[],
@@ -52,6 +51,6 @@ export class DiaryChartsManager {
         content: () => table,
       },
     ]);
-    this.dv.el("div", widget.container);
+    this.dv().el("div", widget.container);
   }
 }

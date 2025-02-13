@@ -1,18 +1,15 @@
 import { ChartManager } from "src/features/charts/chart_manager";
 import { formatMinutes, Item } from "../models/item";
 import { Category } from "../models/category";
+import { inject, injectable } from "inversify";
+import { TYPES } from "src/domain/di/types";
 
+@injectable()
 export class CategoryCharts {
-  private charts: ChartManager;
-  public discardComments: boolean = false;
-
-  /**
-   * Конструктор:
-   * @param charts опционально, если не передан, создаётся новый ChartManager.
-   */
-  constructor(charts?: ChartManager) {
-    this.charts = charts || new ChartManager();
-  }
+  constructor(
+    @inject(TYPES.ChartManager) private charts: ChartManager,
+    @inject(TYPES.DiscardComments) private discardComments: boolean,
+  ) {}
 
   /**
    * Возвращает HTMLElement с построенной диаграммой.

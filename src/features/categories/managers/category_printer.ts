@@ -1,14 +1,14 @@
-import { DvApi } from "src/domain/interfaces/dv_api";
+import type { DvApi } from "src/domain/interfaces/dv_api";
 import { CategoryManager } from "./category_manager";
 import { formatMinutes, Item } from "../models/item";
 import { CategoryCharts } from "./category_charts";
 import { TabsLayoutWidget } from "src/ui/tabs/tab_layout_widget";
 import { TableManager } from "src/features/tables/table_manager";
+import { inject, injectable } from "inversify";
+import { TYPES } from "src/domain/di/types";
 
+@injectable()
 export class CategoryPrinter {
-  private dv: DvApi;
-  private manager: CategoryManager;
-  private charts: CategoryCharts;
   private infoPacks: [Item, Item[]][] | null = null;
   private totalIntervalTime: number | null = null;
   private chartInfo: [Item, Item[]][] | null = null;
@@ -16,16 +16,10 @@ export class CategoryPrinter {
   private pages: Record<string, any>[] = [];
 
   constructor(
-    dv: DvApi,
-    categoriesPath: string,
-    manager: CategoryManager | undefined = undefined,
-    charts: CategoryCharts | undefined = undefined,
-  ) {
-    this.dv = dv;
-    this.manager = manager ?? new CategoryManager(dv, categoriesPath);
-    this.charts = charts ?? new CategoryCharts();
-    this.charts.discardComments = this.manager.discardComments;
-  }
+    @inject(TYPES.DvApi) private dv: () => DvApi,
+    @inject(TYPES.CategoryManager) private manager: CategoryManager,
+    @inject(TYPES.CategoryCharts) private charts: CategoryCharts,
+  ) {}
 
   loadPages(
     pages: Record<string, any>[],
@@ -95,7 +89,7 @@ export class CategoryPrinter {
 
   buildTable(): void {
     const { titles, rows } = this._makeTable();
-    this.dv.table(titles, rows);
+    this.dv().table(titles, rows);
   }
 
   buildTimeNote(): void {
@@ -139,17 +133,17 @@ export class CategoryPrinter {
 
     updateContent();
     setInterval(updateContent, 10000);
-    this.dv.el("div", container);
+    this.dv().el("div", container);
   }
 
   buildChart(): void {
     if (!this.chartInfo || this.chartInfo[0][1].length == 0) {
-      this.dv.paragraph("\nНет данных для построения диаграммы...");
+      this.dv().paragraph("\nНет данных для построения диаграммы...");
       return;
     }
 
     if (this.chartInfo.length == 1) {
-      this.dv.el("div", this.getCharts()[0][1]);
+      this.dv().el("div", this.getCharts()[0][1]);
     } else {
       const widget = new TabsLayoutWidget(
         undefined,
@@ -159,18 +153,18 @@ export class CategoryPrinter {
             this.charts.makePieChart(info, this.manager.getOtherCategory()),
         })),
       );
-      this.dv.el("div", widget.container);
+      this.dv().el("div", widget.container);
     }
   }
 
   buildHistoryChart(): void {
     if (!this.historyInfo || this.historyInfo.length === 0) {
-      this.dv.paragraph("\nНет данных для построения графика истории...");
+      this.dv().paragraph("\nНет данных для построения графика истории...");
       return;
     }
 
     if (this.historyInfo.length === 1) {
-      this.dv.el("div", this.charts.makeLineChart(this.historyInfo[0]));
+      this.dv().el("div", this.charts.makeLineChart(this.historyInfo[0]));
     } else {
       const widget = new TabsLayoutWidget(
         undefined,
@@ -179,7 +173,7 @@ export class CategoryPrinter {
           content: () => this.charts.makeLineChart(history),
         })),
       );
-      this.dv.el("div", widget.container);
+      this.dv().el("div", widget.container);
     }
   }
 
@@ -202,7 +196,7 @@ export class CategoryPrinter {
         content: () => table,
       },
     ]);
-    this.dv.el("div", widget.container);
+    this.dv().el("div", widget.container);
   }
 
   getCharts(): [string, HTMLElement][] {

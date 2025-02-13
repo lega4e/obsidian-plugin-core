@@ -1,22 +1,24 @@
-import { DvApi } from "src/domain/interfaces/dv_api";
+import type { DvApi } from "src/domain/interfaces/dv_api";
 import { ParamsYaml } from "src/features/params/models/params_yaml";
 import { Param } from "src/features/params/models/param";
+import { inject, injectable } from "inversify";
+import { TYPES } from "src/domain/di/types";
 
+@injectable()
 export class ParamsManager {
-  private dv: DvApi;
-  private filename: string;
   private paramsYaml: ParamsYaml;
 
-  constructor(dv: DvApi, filename: string) {
-    this.dv = dv;
-    this.filename = filename;
+  constructor(
+    @inject(TYPES.DvApi) private dv: () => DvApi,
+    @inject(TYPES.ParamsPath) private paramsPath: string,
+  ) {
     this.paramsYaml = this._parseParams();
   }
 
   private _parseParams(): ParamsYaml {
-    const file = this.dv.page(this.filename);
+    const file = this.dv().page(this.paramsPath);
     if (!file) {
-      throw new Error(`Невозможно найти файл параметров '${this.filename}'`);
+      throw new Error(`Невозможно найти файл параметров '${this.paramsPath}'`);
     }
 
     return file as unknown as ParamsYaml;

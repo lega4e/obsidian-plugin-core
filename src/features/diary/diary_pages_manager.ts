@@ -1,13 +1,12 @@
 import { Page } from "../../domain/interfaces/page";
-import { DvApi } from "../../domain/interfaces/dv_api";
+import type { DvApi } from "../../domain/interfaces/dv_api";
 import { moment } from "obsidian";
+import { inject, injectable } from "inversify";
+import { TYPES } from "src/domain/di/types";
 
+@injectable()
 export class DiaryPagesManager {
-  private dv: DvApi;
-
-  constructor(dv: DvApi) {
-    this.dv = dv;
-  }
+  constructor(@inject(TYPES.DvApi) private dv: () => DvApi) {}
 
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
   /* ~~~~~                            EDGES                             ~~~~~ */
@@ -87,7 +86,7 @@ export class DiaryPagesManager {
     const [weekStart, weekEnd] = this.weekEdges(filename);
 
     return [
-      ...this.dv
+      ...this.dv()
         .pages('"Diary/Daily"')
         .filter(
           (file: Page) =>
@@ -102,7 +101,7 @@ export class DiaryPagesManager {
     const [monthStart, monthEnd] = this.monthEdges(filename);
 
     return [
-      ...this.dv
+      ...this.dv()
         .pages('"Diary/Daily"')
         .filter(
           (file: Page) =>
@@ -117,7 +116,7 @@ export class DiaryPagesManager {
     const year = this.year(filename);
 
     return [
-      ...this.dv
+      ...this.dv()
         .pages('"Diary/Daily"')
         .filter(
           (file: Page) =>
@@ -129,7 +128,7 @@ export class DiaryPagesManager {
   monthsPages(filename: string) {
     const year = this.year(filename);
     return [
-      ...this.dv
+      ...this.dv()
         .pages('"Diary/Monthly"')
         .filter((file: Page) => file.file.name.startsWith(year)),
     ].sort((a: Page, b: Page) => a.file.name.localeCompare(b.file.name));
@@ -139,7 +138,7 @@ export class DiaryPagesManager {
     const [monthStart, monthEnd] = this.monthWeekEdges(filename);
 
     return [
-      ...this.dv
+      ...this.dv()
         .pages('"Diary/Weekly"')
         .filter((file: Page) => file.file.name.length == 8)
         .filter((file: Page) => {
@@ -262,7 +261,7 @@ export class DiaryPagesManager {
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
   weekPage(filename: string): Page | undefined {
     const week = this.weekPageName(filename);
-    return this.dv
+    return this.dv()
       .pages('"Diary/Weekly"')
       .filter((file: Page) => file.file.name === week)
       .first();
@@ -270,7 +269,7 @@ export class DiaryPagesManager {
 
   monthPage(filename: string): Page | undefined {
     const month = this.monthPageName(filename);
-    return this.dv
+    return this.dv()
       .pages('"Diary/Monthly"')
       .filter((file: Page) => file.file.name === month)
       .first();
@@ -278,7 +277,7 @@ export class DiaryPagesManager {
 
   yearPage(filename: string): Page | undefined {
     const year = this.yearPageName(filename);
-    return this.dv
+    return this.dv()
       .pages('"Diary/Yearly"')
       .filter((file: Page) => file.file.name === year)
       .first();

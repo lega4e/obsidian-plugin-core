@@ -1,17 +1,20 @@
 import { Category, CategoryPack } from "../models/category";
 import { Item } from "../models/item";
-import { DvApi } from "src/domain/interfaces/dv_api";
+import type { DvApi } from "src/domain/interfaces/dv_api";
+import { inject, injectable } from "inversify";
+import { TYPES } from "src/domain/di/types";
 
+@injectable()
 export class CategoryManager {
-  private dv: DvApi;
   private packs: CategoryPack[] = [];
   private certainPack: CategoryPack | null = null;
   private otherCategory: Category | null = null;
-  public discardComments: boolean = false;
 
-  constructor(dv: DvApi, categoriesPath: string) {
-    this.dv = dv;
-    this._parseCategories(categoriesPath);
+  constructor(
+    @inject(TYPES.DvApi) private dv: () => DvApi,
+    @inject(TYPES.CategoriesPath) private categoriesPath: string,
+  ) {
+    this._parseCategories(this.categoriesPath);
   }
 
   loadPages(pages: Record<string, any>[]): void {
@@ -35,10 +38,11 @@ export class CategoryManager {
     return [root, items];
   }
 
-  calculateArray(packType: string, dates: string[]): [string, [Item, Item[]]][] {
-    return dates.map((date) => 
-      [date, this.calculate(packType, date)],
-    );
+  calculateArray(
+    packType: string,
+    dates: string[],
+  ): [string, [Item, Item[]]][] {
+    return dates.map((date) => [date, this.calculate(packType, date)]);
   }
 
   getOtherCategory(): Category {
@@ -51,14 +55,13 @@ export class CategoryManager {
     this.otherCategory = null;
 
     const allCategories = new Map<string, Category>();
-    const file = this.dv.page(categoriesPath);
+    const file = this.dv().page(categoriesPath);
 
     if (!file) {
       throw new Error(`Can't find file '${categoriesPath}'`);
     }
 
     const parsedData = file as unknown as CategoriesYaml;
-    this.discardComments = parsedData.options.discardComments;
 
     this.otherCategory = new Category(
       parsedData.otherCategory.name,

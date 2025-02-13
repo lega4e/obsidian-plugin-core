@@ -1,6 +1,6 @@
 import Chart from "chart.js/auto";
 import ChartDataLabels from "chartjs-plugin-datalabels";
-import { formatMinutes } from "../categories/models/item";
+import { injectable } from "inversify";
 
 export interface PieChartDataUnit {
   label: string;
@@ -19,6 +19,7 @@ export interface LineChartDataUnit {
   hidden: boolean;
 }
 
+@injectable()
 export class ChartManager {
   /**
    * Строит круговую диаграмму.
