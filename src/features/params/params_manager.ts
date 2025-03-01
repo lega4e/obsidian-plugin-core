@@ -1,35 +1,23 @@
 import type { DvApi } from "src/domain/interfaces/dv_api";
-import { ParamsYaml } from "src/features/params/models/params_yaml";
-import { Param } from "src/features/params/models/param";
+import { Param, ParamsYaml } from "src/features/params/models/param";
 import { inject, injectable } from "inversify";
 import { TYPES } from "src/domain/di/types";
+import { ParamsConfigHolder } from "./models/params_config_holder";
 
 @injectable()
 export class ParamsManager {
-  private paramsYaml: ParamsYaml;
-
   constructor(
     @inject(TYPES.DvApi) private dv: () => DvApi,
-    @inject(TYPES.ParamsPath) private paramsPath: string,
-  ) {
-    this.paramsYaml = this._parseParams();
-  }
-
-  private _parseParams(): ParamsYaml {
-    const file = this.dv().page(this.paramsPath);
-    if (!file) {
-      throw new Error(`Невозможно найти файл параметров '${this.paramsPath}'`);
-    }
-
-    return file as unknown as ParamsYaml;
-  }
+    @inject(TYPES.ParamsConfigHolder)
+    private paramsConfigHolder: ParamsConfigHolder,
+  ) {}
 
   // Публичная функция для получения массива объектов Param,
   // где value содержит массив чисел из значений каждой страницы.
   getParametersArray(pages: Record<string, any>[]): Param[] {
     const paramsList: Param[] = [];
 
-    for (const paramYaml of this.paramsYaml.params) {
+    for (const paramYaml of this._getParams().params) {
       const rawValues: [string, number][] = [];
       // Собираем числа для данного параметра из страниц по ключу paramYaml.name
       for (const page of pages) {
@@ -65,10 +53,18 @@ export class ParamsManager {
       const values = param.values;
       const sum = values.reduce((acc, curr) => acc + curr[1], 0);
       const avg = sum / values.length;
-      averagedParams.push(new Param(param.name, param.order, [['', avg]]));
+      averagedParams.push(new Param(param.name, param.order, [["", avg]]));
     }
 
     // Уже отсортировано в getParametersArray, но можно ещё раз отсортировать для гарантии
     return averagedParams.sort((a, b) => a.order - b.order);
+  }
+
+  private _getParams(): ParamsYaml {
+    const params = this.paramsConfigHolder.value;
+    if (!params) {
+      throw new Error("Params not found");
+    }
+    return params;
   }
 }

@@ -3,12 +3,14 @@ import { formatMinutes, Item } from "../models/item";
 import { Category } from "../models/category";
 import { inject, injectable } from "inversify";
 import { TYPES } from "src/domain/di/types";
+import type { DicardCommentsHolder } from "src/domain/di/types";
+import { CategoriesHolder } from "../state/categories_holder";
 
 @injectable()
 export class CategoryCharts {
   constructor(
     @inject(TYPES.ChartManager) private charts: ChartManager,
-    @inject(TYPES.DiscardComments) private discardComments: boolean,
+    @inject(TYPES.CategoriesHolder) private categoriesHolder: CategoriesHolder,
   ) {}
 
   /**
@@ -127,12 +129,12 @@ export class CategoryCharts {
         ((value / totalMinutes) * 100).toFixed(1).replace(".", ",") +
         "%",
       ...items
-        .flatMap((item) => item.prettyLeafs(this.discardComments))
+        .flatMap((item) => item.prettyLeafs(this.categoriesHolder.value?.discardComments))
         .sort((a, b) => b.totalMinutes - a.totalMinutes)
         .map(
           (c) =>
             c.category!.name! +
-            (this.discardComments && c.comment && c.comment != ""
+            (this.categoriesHolder.value?.discardComments && c.comment && c.comment != ""
               ? ` (${c.comment})`
               : "") +
             " " +

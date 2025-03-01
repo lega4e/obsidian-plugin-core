@@ -27,6 +27,10 @@ export default class Lega4eCorePlugin extends Plugin {
 
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    container.get<ValueNotifier<string>>(TYPES.CategoriesPathHolder).value =
+      this.settings.categories_path;
+    container.get<ValueNotifier<string>>(TYPES.ParamsPathHolder).value =
+      this.settings.params_path;
   }
 
   async saveSettings() {
@@ -35,24 +39,20 @@ export default class Lega4eCorePlugin extends Plugin {
 
   registerApi() {
     console.log("Lega4eCorePlugin registerApi");
+
+    if (container.isBound(TYPES.DvApi)) {
+      container.unbind(TYPES.DvApi);
+    }
+    container.bind<() => DvApi>(TYPES.DvApi).toConstantValue(() => this.dv!);
+
     (this.app as any).plugins.plugins["lega4e-core-plugin"].api = {
       sayHello: (name: string) => `Hello, ${name}!`,
       init: (dv: DvApi) => {
         this.dv = dv;
-
-        if (container.isBound(TYPES.DvApi)) {
-          container.unbind(TYPES.DvApi);
-        }
-
         container
-          .bind<() => DvApi>(TYPES.DvApi)
-          .toConstantValue(() => this.dv!);
-        container
-          .rebind(TYPES.CategoriesPath)
-          .toConstantValue(this.settings.categories_path);
-        container
-          .rebind(TYPES.ParamsPath)
-          .toConstantValue(this.settings.params_path);
+          .get<ValueNotifier<string>>(TYPES.CategoriesPathHolder)
+          .notify();
+        container.get<ValueNotifier<string>>(TYPES.ParamsPathHolder).notify();
       },
       diaryPagesManager: () => container.get(TYPES.DiaryPagesManager),
       categoryPrinter: () => container.get(TYPES.CategoryPrinter),
@@ -85,7 +85,9 @@ class Lega4eCorePluginSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.categories_path = value;
             await this.plugin.saveSettings();
-            container.rebind(TYPES.CategoriesPath).toConstantValue(value);
+            container.get<ValueNotifier<string>>(
+              TYPES.CategoriesPathHolder,
+            ).value = value;
           }),
       );
 
@@ -99,7 +101,8 @@ class Lega4eCorePluginSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.params_path = value;
             await this.plugin.saveSettings();
-            container.rebind(TYPES.ParamsPath).toConstantValue(value);
+            container.get<ValueNotifier<string>>(TYPES.ParamsPathHolder).value =
+              value;
           }),
       );
   }

@@ -1,21 +1,15 @@
-import { Category, CategoryPack } from "../models/category";
+import { Category } from "../models/category";
 import { Item } from "../models/item";
-import type { DvApi } from "src/domain/interfaces/dv_api";
 import { inject, injectable } from "inversify";
 import { TYPES } from "src/domain/di/types";
+import { CategoriesHolder, CategoriesState } from "../state/categories_holder";
 
 @injectable()
 export class CategoryManager {
-  private packs: CategoryPack[] = [];
-  private certainPack: CategoryPack | null = null;
-  private otherCategory: Category | null = null;
-
   constructor(
-    @inject(TYPES.DvApi) private dv: () => DvApi,
-    @inject(TYPES.CategoriesPath) private categoriesPath: string,
-  ) {
-    this._parseCategories(this.categoriesPath);
-  }
+    @inject(TYPES.CategoriesHolder)
+    private categories: CategoriesHolder,
+  ) {}
 
   loadPages(pages: Record<string, any>[]): void {
     this._loadItems(pages);
@@ -26,7 +20,9 @@ export class CategoryManager {
   }
 
   calculate(packType: string, date?: string): [Item, Item[]] {
-    const pack = this.packs.find((p) => p.type == packType);
+    const categories = this._getCategories();
+
+    const pack = categories.packs.find((p) => p.type == packType);
     if (!pack) {
       throw new Error(`Pack type ${packType} not found`);
     }
@@ -46,72 +42,20 @@ export class CategoryManager {
   }
 
   getOtherCategory(): Category {
-    return this.otherCategory!;
+    return this._getCategories().otherCategory;
   }
 
-  private _parseCategories(categoriesPath: string): void {
-    this.packs = [];
-    this.certainPack = null;
-    this.otherCategory = null;
-
-    const allCategories = new Map<string, Category>();
-    const file = this.dv().page(categoriesPath);
-
-    if (!file) {
-      throw new Error(`Can't find file '${categoriesPath}'`);
+  private _getCategories(): CategoriesState {
+    const categories = this.categories.value;
+    if (!categories) {
+      throw new Error("Categories not found");
     }
 
-    const parsedData = file as unknown as CategoriesYaml;
-
-    this.otherCategory = new Category(
-      parsedData.otherCategory.name,
-      [],
-      [],
-      parsedData.otherCategory.color,
-      parsedData.otherCategory.skipOnDiagramm,
-    );
-
-    for (const packYaml of parsedData.categories_packs) {
-      let pack = new CategoryPack(packYaml.type, [], packYaml.prettyName);
-
-      for (const categoryYaml of packYaml.categories) {
-        if (allCategories.has(packYaml.type + "." + categoryYaml.name)) {
-          throw new Error(`Category ${categoryYaml.name} already exists`);
-        }
-
-        const parents =
-          categoryYaml.parents?.map((name) => {
-            const parent = allCategories.get(name);
-            if (!parent) {
-              throw new Error(`Parent ${name} not found`);
-            }
-            return parent;
-          }) || [];
-
-        let category = new Category(
-          categoryYaml.name,
-          parents,
-          [],
-          categoryYaml.color,
-          categoryYaml.skipOnDiagramm === true,
-          categoryYaml.hideOnLineChart ?? true,
-        );
-
-        parents.forEach((parent) => parent.children.push(category));
-        allCategories.set(packYaml.type + "." + categoryYaml.name, category);
-        pack.categories.push(category);
-      }
-
-      if (packYaml.isCertain) {
-        this.certainPack = pack;
-      }
-
-      this.packs.push(pack);
-    }
+    return categories;
   }
 
   private _clearCategoriesItems() {
-    for (const pack of this.packs) {
+    for (const pack of this._getCategories().packs) {
       for (const category of pack.categories) {
         category.clear();
       }
@@ -134,7 +78,10 @@ export class CategoryManager {
           const minutes =
             parseInt(match[3] || "0") * 60 + parseInt(match[4] || "0");
 
-          const certainCategory = this.certainPack?.find(category);
+          const certainCategory =
+            this._getCategories().certainPack.categories.find(
+              (c) => c.name == category,
+            );
           if (!certainCategory) {
             throw new Error(`Не найдено конкретной категории ${category}`);
           }

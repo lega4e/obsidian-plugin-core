@@ -1,3 +1,7 @@
+export type DicardCommentsHolder = {
+  value: boolean;
+}
+
 export const TYPES = {
   // External
   DvApi: "DvApi",
@@ -13,10 +17,12 @@ export const TYPES = {
   ParamsPrinter: Symbol.for("ParamsPrinter"),
   ParamsManager: Symbol.for("ParamsManager"),
 
-  // Options
-  DiscardComments: Symbol.for("DiscardComments"),
-
   // Paths
-  CategoriesPath: Symbol.for("CategoriesPath"),
-  ParamsPath: Symbol.for("ParamsPath"),
+  CategoriesPathHolder: Symbol.for("CategoriesPathHolder"),
+  ParamsPathHolder: Symbol.for("ParamsPathHolder"),
+
+  // Configs
+  CategoriesConfigHolder: Symbol.for("CategoriesConfigHolder"),
+  ParamsConfigHolder: Symbol.for("ParamsConfigHolder"),
+  CategoriesHolder: Symbol.for("CategoriesHolder"),
 } as const;

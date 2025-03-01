@@ -27,6 +27,8 @@
 		"chartjs-plugin-datalabels": "^2.2.0",
 		"inversify": "^6.2.2",
 		"js-yaml": "^4.1.0",
-		"moment": "^2.30.1"
+		"moment": "^2.30.1",
+		"react": "^19.0.0",
+		"valtio": "^2.1.3"
 	}
 }
