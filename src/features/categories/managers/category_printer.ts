@@ -126,8 +126,9 @@ export class CategoryPrinter {
           end += 24 * 60;
         }
         totalTime = end - start;
-      } else {
-        let averageDayTime = Math.round(totalIntervalTime! / this.pages.length);
+      } else if (dayTime || sleepTime) {
+        let daysCount = this.pages.filter((page) => page["Подъём"] && page["Отбой"]).length;
+        let averageDayTime = Math.round(totalTime! / daysCount);
         let averageSleepTime = Math.round(24 * 60 - averageDayTime);
         if (dayTime) {
           averageDayTimeStr = formatMinutes(averageDayTime);
