@@ -63,7 +63,7 @@ export class CategoryPrinter {
             .reduce((acc, curr) => acc + curr.totalMinutes, 0);
         root.totalMinutes = totalMinutes;
         items = items.filter((item) => !item.category!.skipOnDiagramm);
-        return { root, items };
+        return { root, items, title: packType };
       });
     } else {
       this.chartInfo = [];
@@ -177,7 +177,7 @@ export class CategoryPrinter {
     }
 
     if (this.chartInfo.length == 1) {
-      this.dv().el("div", this.getCharts()[0][1]);
+      this.dv().el("div", this.getCharts()[0]);
     } else {
       const widget = new TabsLayoutWidget(
         undefined,
@@ -218,8 +218,11 @@ export class CategoryPrinter {
 
     const widget = new TabsLayoutWidget(undefined, [
       ...charts.map((chart) => ({
-        title: chart[0],
-        content: () => chart[1],
+        title: {
+          "common": "Общие",
+          "global": "Обобщённые",
+        }[chart.title]!,
+        content: () => chart.chart,
       })),
       ...historyCharts.map((chart) => ({
         title: "История",
@@ -233,15 +236,15 @@ export class CategoryPrinter {
     this.dv().el("div", widget.container);
   }
 
-  getCharts(): [string, HTMLElement][] {
+  getCharts(): {title: string, chart: HTMLElement}[] {
     if (this.chartInfo == null) {
       return [];
     }
 
-    return this.chartInfo.map((info) => [
-      info.root.category!.name!,
-      this.charts.makePieChart(info, this.manager.getOtherCategory()),
-    ]);
+    return this.chartInfo.map((info) => ({
+      title: info.title!,
+      chart: this.charts.makePieChart(info, this.manager.getOtherCategory()),
+    }));
   }
 
   getHistoryCharts(): HTMLElement[] {

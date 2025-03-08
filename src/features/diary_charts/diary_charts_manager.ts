@@ -13,10 +13,7 @@ export class DiaryChartsManager {
     @inject(TYPES.CategoryPrinter) private categoryPrinter: CategoryPrinter,
   ) {}
 
-  buildCharts(
-    pages: Record<string, any>[],
-    chartCategoryTypes: string[],
-  ): void {
+  buildCharts(pages: Record<string, any>[]): void {
     this.paramsPrinter.loadParams(pages);
     const paramsChart = this.paramsPrinter.getChart();
     this.paramsPrinter.clearParams();
@@ -24,19 +21,21 @@ export class DiaryChartsManager {
     this.categoryPrinter.loadPages(
       pages,
       ["sub", "common"],
-      chartCategoryTypes,
+      ["common", "global"],
       ["common", "global"],
     );
 
-    const categoryCharts = this.categoryPrinter.getCharts();
+    const categoryCharts = this.categoryPrinter
+      .getCharts()
+      .map((chart) => chart.chart);
     const historyCharts = this.categoryPrinter.getHistoryCharts();
     const table = this.categoryPrinter.getTable();
     const tableAvg = this.categoryPrinter.getTable(true);
     this.categoryPrinter.clearPages();
 
     const widget = new TabsLayoutWidget(undefined, [
-      ...categoryCharts.map(([name, chart]) => ({
-        title: { Общие: "Общие категории", Категории: "Подкатегории" }[name]!,
+      ...categoryCharts.map((chart, index) => ({
+        title: ["Общие категории", "Обобщённые"][index],
         content: () => chart,
       })),
       ...historyCharts.map((chart, index) => ({

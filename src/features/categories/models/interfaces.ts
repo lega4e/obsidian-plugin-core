@@ -1,6 +1,7 @@
 import { Item } from "./item";
 
 export interface CategoryData {
+  title?: string;
   root: Item;
   items: Item[];
 }
