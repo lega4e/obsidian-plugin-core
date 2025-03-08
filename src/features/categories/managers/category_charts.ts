@@ -3,8 +3,8 @@ import { formatMinutes, Item } from "../models/item";
 import { Category } from "../models/category";
 import { inject, injectable } from "inversify";
 import { TYPES } from "src/domain/di/types";
-import type { DicardCommentsHolder } from "src/domain/di/types";
 import { CategoriesHolder } from "../state/categories_holder";
+import { CategoryData, HistoryInfo } from "../models/interfaces";
 
 @injectable()
 export class CategoryCharts {
@@ -20,10 +20,10 @@ export class CategoryCharts {
    * @returns HTMLElement, содержащий диаграмму.
    */
   public makePieChart(
-    chartInfo: [Item, Item[]],
+    chartInfo: CategoryData,
     otherCategory: Category,
   ): HTMLElement {
-    const [root, items] = chartInfo;
+    const { root, items } = chartInfo;
 
     // Создаем диаграмму через ChartManager. Метод pie возвращает элемент canvas или подобный.
     const canvas = this.charts.pie(
@@ -62,14 +62,14 @@ export class CategoryCharts {
     return chartContainer;
   }
 
-  makeLineChart(chartInfo: [string, [Item, Item[]]][]): HTMLElement {
-    const items = chartInfo.map(([_, [__, items]]) => items).flat();
+  makeLineChart(chartInfo: HistoryInfo): HTMLElement {
+    const items = chartInfo.map(({ items }) => items).flat();
     const categories = items.map((item) => item.category!.name!).unique();
 
     const units = categories.map((category) => ({
       label: category,
       values: chartInfo.map(
-        ([date, [_, items]]) =>
+        ({ date, items }) =>
           [
             date,
             items.find((item) => item.category!.name == category)
@@ -86,20 +86,26 @@ export class CategoryCharts {
       units,
       undefined,
       undefined,
-      (category, value, date) => {
-        let info = chartInfo.find(([key, _]) => key == date);
-        if (!info) {
-          return [category];
-        }
+      (category, value, dates) => {
+        let info = chartInfo.filter(({ date }) => dates.includes(date));
 
-        let [root, items] = info[1];
-        let item = items.find((item) => item.category!.name == category);
-        return item
-          ? this._item2tip(value, root.totalMinutes, [item])
+        let items = Item.aggregate(
+          info
+            .map(({ items }) => items)
+            .flat()
+            .filter((item) => item.category!.name == category)
+            .map((item) => item.leafs())
+            .flat(),
+          this.categoriesHolder.value?.discardComments,
+        );
+
+        return items.length > 0
+          ? this._item2tip(value, info[0].root.totalMinutes, items)
           : [category];
       },
       60,
       formatMinutes,
+      15,
     );
 
     const chartContainer = document.createElement("div");
@@ -129,12 +135,16 @@ export class CategoryCharts {
         ((value / totalMinutes) * 100).toFixed(1).replace(".", ",") +
         "%",
       ...items
-        .flatMap((item) => item.prettyLeafs(this.categoriesHolder.value?.discardComments))
+        .flatMap((item) =>
+          item.prettyLeafs(this.categoriesHolder.value?.discardComments),
+        )
         .sort((a, b) => b.totalMinutes - a.totalMinutes)
         .map(
           (c) =>
             c.category!.name! +
-            (this.categoriesHolder.value?.discardComments && c.comment && c.comment != ""
+            (this.categoriesHolder.value?.discardComments &&
+            c.comment &&
+            c.comment != ""
               ? ` (${c.comment})`
               : "") +
             " " +

@@ -1,4 +1,4 @@
-import { Param, ParamsYaml } from "./param";
+import { ParamsYaml } from "./param";
 import { inject } from "inversify";
 import { TYPES } from "src/domain/di/types";
 import { DvApi } from "src/domain/interfaces/dv_api";

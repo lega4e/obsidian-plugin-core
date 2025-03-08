@@ -55,7 +55,7 @@ export class ChartManager {
 
     const colors = labels
       .map((label) => data.find((item) => item.label == label))
-      .map((item) => this._generateColor(item!.label, item!.color));
+      .map((item) => item!.color ?? this._generateColor(item!.label));
 
     new Chart(canvas, {
       type: "pie",
@@ -121,7 +121,11 @@ export class ChartManager {
     units: LineChartDataUnit[],
     minY?: number,
     maxY?: number,
-    labelCallback?: (category: string, value: number, date: string) => string[],
+    labelCallback?: (
+      category: string,
+      value: number,
+      date: string[],
+    ) => string[],
     tickStepSize?: number,
     tickCallback?: (value: number) => string,
     maxPoints: number = 15,
@@ -138,10 +142,22 @@ export class ChartManager {
         xValues.every((x, i) => x === firstXValues[i]),
     );
 
+    let labelMap = null;
     if (allSameX) {
-      aggregatedUnits = units.map((unit) => ({
+      let aggregated = units.map((unit) => ({
         ...unit,
         values: this._aggregateDataPoints(unit.values, maxPoints),
+      }));
+      labelMap = new Map<string, Map<string, string[]>>(
+        aggregated.map((unit) => [
+          unit.label,
+          new Map(unit.values.map(({ labels }) => [labels[0], labels])),
+        ]),
+      );
+      console.log(labelMap);
+      aggregatedUnits = aggregated.map((unit) => ({
+        ...unit,
+        values: unit.values.map(({ value, labels }) => [labels[0], value]),
       }));
     }
 
@@ -151,7 +167,7 @@ export class ChartManager {
         datasets: aggregatedUnits.map((unit) => ({
           label: unit.label,
           data: unit.values,
-          borderColor: this._generateColor(unit.label, unit.color),
+          borderColor: unit.color ?? this._generateColor(unit.label),
           fill: false,
           tension: 0.4,
           hidden: unit.hidden,
@@ -167,7 +183,9 @@ export class ChartManager {
                 labelCallback?.(
                   context.dataset.label || "",
                   context.parsed.y,
-                  context.label,
+                  labelMap?.get(context.dataset.label!)?.get(context.label) ?? [
+                    context.label,
+                  ],
                 ) ?? context.formattedValue,
             },
           },
@@ -218,10 +236,7 @@ export class ChartManager {
   }
 
   // Новый приватный метод для генерации цвета
-  private _generateColor(label: string, color?: string): string {
-    if (color) {
-      return color;
-    }
+  private _generateColor(label: string): string {
     const hash = label.split("").reduce((acc, char) => {
       return char.charCodeAt(0) + ((acc << 5) - acc);
     }, 0);
@@ -244,13 +259,17 @@ export class ChartManager {
   private _aggregateDataPoints(
     points: [string, number][],
     maxPoints: number,
-  ): [string, number][] {
+  ): { label: string; value: number; labels: string[] }[] {
     if (points.length <= maxPoints) {
-      return points;
+      return points.map(([label, value]) => ({
+        label,
+        value,
+        labels: [label],
+      }));
     }
 
     const chunkSize = Math.ceil(points.length / maxPoints);
-    const aggregated: [string, number][] = [];
+    const aggregated: { label: string; value: number; labels: string[] }[] = [];
 
     for (let i = 0; i < points.length; i += chunkSize) {
       const chunk = points.slice(i, i + chunkSize);
@@ -258,7 +277,11 @@ export class ChartManager {
         chunk.reduce((sum, [_, val]) => sum + val, 0) / chunk.length;
       // Берём среднюю точку из чанка как метку времени
       const middlePoint = chunk[Math.floor(chunk.length / 2)][0];
-      aggregated.push([middlePoint, avgValue]);
+      aggregated.push({
+        label: middlePoint,
+        value: avgValue,
+        labels: chunk.map(([label]) => label),
+      });
     }
 
     return aggregated;

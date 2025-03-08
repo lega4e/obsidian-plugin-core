@@ -3,6 +3,7 @@ import { Item } from "../models/item";
 import { inject, injectable } from "inversify";
 import { TYPES } from "src/domain/di/types";
 import { CategoriesHolder, CategoriesState } from "../state/categories_holder";
+import { CategoryData, HistoryInfo, HistoryDayInfo } from "../models/interfaces";
 
 @injectable()
 export class CategoryManager {
@@ -19,7 +20,7 @@ export class CategoryManager {
     this._clearCategoriesItems();
   }
 
-  calculate(packType: string, date?: string): [Item, Item[]] {
+  calculate(packType: string, date?: string): CategoryData {
     const categories = this._getCategories();
 
     const pack = categories.packs.find((p) => p.type == packType);
@@ -31,14 +32,14 @@ export class CategoryManager {
     let [root, items] = rootCategory.summarizeWithItems(date);
     items = items.filter((item) => item.totalMinutes != 0);
     items = items.sort((a, b) => b.totalMinutes - a.totalMinutes);
-    return [root, items];
+    return { root, items };
   }
 
   calculateArray(
     packType: string,
     dates: string[],
-  ): [string, [Item, Item[]]][] {
-    return dates.map((date) => [date, this.calculate(packType, date)]);
+  ): HistoryInfo {
+    return dates.map((date) => ({ date, ...this.calculate(packType, date) }));
   }
 
   getOtherCategory(): Category {

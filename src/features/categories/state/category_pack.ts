@@ -13,7 +13,7 @@ interface CategoryPackYaml {
 
 interface CategoriesYaml {
   options: {
-    discardComments: boolean;
+    discardComments: number;
   };
   categories_packs: CategoryPackYaml[];
   otherCategory: {

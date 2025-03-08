@@ -9,7 +9,7 @@ export interface CategoriesState {
   packs: CategoryPack[];
   certainPack: CategoryPack;
   otherCategory: Category;
-  discardComments: boolean;
+  discardComments: number;
 }
 
 export class CategoriesHolder extends DerivedValueNotifier<
@@ -82,7 +82,7 @@ export class CategoriesHolder extends DerivedValueNotifier<
         config.otherCategory.color,
         config.otherCategory.skipOnDiagramm,
       ),
-      discardComments: config.options.discardComments,
+      discardComments: config.options.discardComments ?? 0,
     };
   }
 }

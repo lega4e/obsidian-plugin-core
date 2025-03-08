@@ -1,13 +1,15 @@
 import { Category } from "./category";
 
 export function formatMinutes(totalMinutes: number): string {
-  const minutes = totalMinutes % 60;
+  const minutes = Math.round(totalMinutes % 60);
   const hours = Math.floor(totalMinutes / 60);
 
-  return totalMinutes == 0 ? "0" : (
-    `${hours != 0 ? hours.toString() + "ч." : ""} ` +
-    `${minutes != 0 || hours == 0 ? minutes.toString() + "м." : ""}`
-  ).trim();
+  return totalMinutes == 0
+    ? "0"
+    : (
+        `${hours != 0 ? hours.toString() + "ч." : ""} ` +
+        `${minutes != 0 || hours == 0 ? minutes.toString() + "м." : ""}`
+      ).trim();
 }
 
 export class Item {
@@ -43,25 +45,28 @@ export class Item {
     return this.children.flatMap((c) => c.leafs());
   }
 
-  prettyLeafs(discardComments: boolean = false): Item[] {
+  prettyLeafs(discardComments: number = 0): Item[] {
+    return Item.aggregate(this.leafs(), discardComments);
+  }
+
+  static aggregate(items: Item[], discardComments: number = 0): Item[] {
     function key(item: Item): string {
       return (
         item.category!.name! +
         (discardComments && item.comment && item.comment != ""
-          ? ` (${item.comment})`
+          ? ` (${item.comment.split(";").slice(0, discardComments).join(";")})`
           : "")
       );
     }
 
-    const leafs = this.leafs();
-    const items = new Map<string, Item>();
+    const aggregatedItems = new Map<string, Item>();
 
-    for (const item of leafs) {
-      let existedItem = items.get(key(item));
+    for (const item of items) {
+      let existedItem = aggregatedItems.get(key(item));
       if (existedItem) {
         existedItem.totalMinutes += item.totalMinutes;
       } else {
-        items.set(
+        aggregatedItems.set(
           key(item),
           new Item(
             item.category,
@@ -74,8 +79,33 @@ export class Item {
       }
     }
 
-    return Array.from(items.values()).sort(
+    return Array.from(aggregatedItems.values()).sort(
       (a, b) => b.totalMinutes - a.totalMinutes,
     );
+  }
+
+  static isEqualComments(lhs: string, rhs: string, level: number): boolean {
+    if (level == 0) {
+      return true;
+    }
+
+    if (level < 0) {
+      return lhs == rhs;
+    }
+
+    const lhsWords = lhs.split(";");
+    const rhsWords = rhs.split(";");
+
+    for (let i = 0; i < level; ++i) {
+      if (i < lhsWords.length && i < rhsWords.length) {
+        return lhsWords.length == rhsWords.length;
+      }
+
+      if (lhsWords[i] != rhsWords[i]) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }

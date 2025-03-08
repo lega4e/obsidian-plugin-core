@@ -31,6 +31,7 @@ export class DiaryChartsManager {
     const categoryCharts = this.categoryPrinter.getCharts();
     const historyCharts = this.categoryPrinter.getHistoryCharts();
     const table = this.categoryPrinter.getTable();
+    const tableAvg = this.categoryPrinter.getTable(true);
     this.categoryPrinter.clearPages();
 
     const widget = new TabsLayoutWidget(undefined, [
@@ -49,6 +50,10 @@ export class DiaryChartsManager {
       {
         title: "Таблица",
         content: () => table,
+      },
+      {
+        title: "Таблица (ср)",
+        content: () => tableAvg,
       },
     ]);
     this.dv().el("div", widget.container);

@@ -1,18 +1,20 @@
 import type { DvApi } from "src/domain/interfaces/dv_api";
 import { CategoryManager } from "./category_manager";
-import { formatMinutes, Item } from "../models/item";
+import { formatMinutes } from "../models/item";
 import { CategoryCharts } from "./category_charts";
 import { TabsLayoutWidget } from "src/ui/tabs/tab_layout_widget";
 import { TableManager } from "src/features/tables/table_manager";
 import { inject, injectable } from "inversify";
 import { TYPES } from "src/domain/di/types";
+import { HistoryInfo } from "../models/interfaces";
+import { CategoryData } from "../models/interfaces";
 
 @injectable()
 export class CategoryPrinter {
-  private infoPacks: [Item, Item[]][] | null = null;
+  private infoPacks: CategoryData[] | null = null;
   private totalIntervalTime: number | null = null;
-  private chartInfo: [Item, Item[]][] | null = null;
-  private historyInfo: [string, [Item, Item[]]][][] = [];
+  private chartInfo: CategoryData[] | null = null;
+  private historyInfo: HistoryInfo[] = [];
   private pages: Record<string, any>[] = [];
 
   constructor(
@@ -53,7 +55,7 @@ export class CategoryPrinter {
           throw new Error("Info pack with type " + packType + " not found");
         }
 
-        let [root, items] = info;
+        let { root, items } = info;
         let totalMinutes =
           root.totalMinutes -
           items
@@ -61,7 +63,7 @@ export class CategoryPrinter {
             .reduce((acc, curr) => acc + curr.totalMinutes, 0);
         root.totalMinutes = totalMinutes;
         items = items.filter((item) => !item.category!.skipOnDiagramm);
-        return [root, items];
+        return { root, items };
       });
     } else {
       this.chartInfo = [];
@@ -87,15 +89,19 @@ export class CategoryPrinter {
     return entries.length > 0;
   }
 
-  buildTable(): void {
-    const { titles, rows } = this._makeTable();
+  buildTable(avg: boolean = false): void {
+    const { titles, rows } = this._makeTable(avg);
     this.dv().table(titles, rows);
   }
 
-  buildTimeNote(little: boolean = false): void {
+  buildTimeNote(
+    little: boolean = false,
+    dayTime: boolean = false,
+    sleepTime: boolean = false,
+  ): void {
     const info = this.infoPacks![0];
 
-    if (info[0].totalMinutes == null) {
+    if (info.root.totalMinutes == null) {
       return;
     }
 
@@ -106,9 +112,11 @@ export class CategoryPrinter {
     const updateContent = () => {
       let totalTime = totalIntervalTime;
 
+      let averageDayTimeStr = null;
+      let averageSleepTimeStr = null;
       if (totalTime == null) {
         if (start == null) {
-          container.textContent = !little ? `Итого: ${info[0].pretty()}` : "";
+          container.textContent = !little ? `Итого: ${info.root.pretty()}` : "";
           return;
         }
 
@@ -118,22 +126,37 @@ export class CategoryPrinter {
           end += 24 * 60;
         }
         totalTime = end - start;
+      } else {
+        let averageDayTime = Math.round(totalIntervalTime! / this.pages.length);
+        let averageSleepTime = Math.round(24 * 60 - averageDayTime);
+        if (dayTime) {
+          averageDayTimeStr = formatMinutes(averageDayTime);
+        }
+        if (sleepTime) {
+          averageSleepTimeStr = formatMinutes(averageSleepTime);
+        }
       }
 
       if (!little) {
         container.innerHTML =
-          `Итого: ${info[0].pretty()}<br/>Должно: ${formatMinutes(totalTime)}` +
-          (info[0].totalMinutes < totalTime
-            ? `<br/>Нехватка: ${formatMinutes(totalTime - info[0].totalMinutes)}`
-            : totalTime == info[0].totalMinutes
+          `Итого: ${info.root.pretty()}<br/>Должно: ${formatMinutes(totalTime)}` +
+          (info.root.totalMinutes < totalTime
+            ? `<br/>Нехватка: ${formatMinutes(totalTime - info.root.totalMinutes)}`
+            : totalTime == info.root.totalMinutes
               ? "<br/>Тютелька в тютельку"
-              : `<br/>Избыток: ${formatMinutes(info[0].totalMinutes - totalTime)}`);
+              : `<br/>Избыток: ${formatMinutes(info.root.totalMinutes - totalTime)}`);
+        if (averageDayTimeStr) {
+          container.innerHTML += `<br/>День: ${averageDayTimeStr}`;
+        }
+        if (averageSleepTimeStr) {
+          container.innerHTML += `<br/>Сон: ${averageSleepTimeStr}`;
+        }
       } else {
         container.textContent =
-          info[0].totalMinutes < totalTime
-            ? ` | -${formatMinutes(totalTime - info[0].totalMinutes)}`
-            : info[0].totalMinutes > totalTime
-              ? ` | +${formatMinutes(info[0].totalMinutes - totalTime)}`
+          info.root.totalMinutes < totalTime
+            ? ` | -${formatMinutes(totalTime - info.root.totalMinutes)}`
+            : info.root.totalMinutes > totalTime
+              ? ` | +${formatMinutes(info.root.totalMinutes - totalTime)}`
               : "";
       }
     };
@@ -148,7 +171,7 @@ export class CategoryPrinter {
   }
 
   buildChart(): void {
-    if (!this.chartInfo || this.chartInfo[0][1].length == 0) {
+    if (!this.chartInfo || this.chartInfo[0].items.length == 0) {
       this.dv().paragraph("\nНет данных для построения диаграммы...");
       return;
     }
@@ -159,7 +182,7 @@ export class CategoryPrinter {
       const widget = new TabsLayoutWidget(
         undefined,
         this.chartInfo.map((info, i) => ({
-          title: info[0].category!.name!,
+          title: info.root.category!.name!,
           content: () =>
             this.charts.makePieChart(info, this.manager.getOtherCategory()),
         })),
@@ -180,7 +203,7 @@ export class CategoryPrinter {
       const widget = new TabsLayoutWidget(
         undefined,
         this.historyInfo.map((history, i) => ({
-          title: history[0][0] || `История ${i + 1}`,
+          title: history[0].date || `История ${i + 1}`,
           content: () => this.charts.makeLineChart(history),
         })),
       );
@@ -216,7 +239,7 @@ export class CategoryPrinter {
     }
 
     return this.chartInfo.map((info) => [
-      info[0].category!.name!,
+      info.root.category!.name!,
       this.charts.makePieChart(info, this.manager.getOtherCategory()),
     ]);
   }
@@ -231,20 +254,23 @@ export class CategoryPrinter {
     );
   }
 
-  getTable(): HTMLElement {
-    const { titles, rows } = this._makeTable();
+  getTable(avg: boolean = false): HTMLElement {
+    const { titles, rows } = this._makeTable(avg);
     return TableManager.makeTable(titles, rows);
   }
 
-  private _makeTable(): { titles: string[]; rows: string[][] } {
+  private _makeTable(avg: boolean = false): {
+    titles: string[];
+    rows: string[][];
+  } {
     if (this.infoPacks == null) {
       throw new Error("Info packs not loaded");
     }
 
     const titles = this.infoPacks
-      .map((info) => [info[0].category?.name!, "Время"])
+      .map((info) => [info.root.category?.name!, "Время"])
       .reduce((acc, curr) => acc.concat(curr), []);
-    const rowsPack = this.infoPacks.map((info) => info[1]);
+    const rowsPack = this.infoPacks.map((info) => info.items);
 
     const rows = [];
     for (
@@ -260,7 +286,8 @@ export class CategoryPrinter {
                   items[i].category?.name!,
                   this._item2tip(
                     items[i].totalMinutes,
-                    this.infoPacks![0][0].totalMinutes,
+                    this.infoPacks![0].root.totalMinutes,
+                    avg ? this.pages.length : undefined,
                   ),
                 ]
               : ["", ""],
@@ -304,9 +331,14 @@ export class CategoryPrinter {
     return hours * 60 + minutes;
   }
 
-  private _item2tip(value: number, totalMinutes: number): string {
+  private _item2tip(
+    value: number,
+    totalMinutes: number,
+    days?: number,
+  ): string {
     return (
-      formatMinutes(value) +
+      formatMinutes(days ? Math.round(value / days) : value) +
+      (days ? " / д." : "") +
       "; " +
       ((value / totalMinutes) * 100).toFixed(1).replace(".", ",") +
       "%"
