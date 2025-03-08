@@ -50,13 +50,16 @@ export class CategoryCharts {
       },
     );
 
+    canvas.height = 350;
+    canvas.width = 350;
+    canvas.style.width = "350px";
+    canvas.style.height = "350px";
+
     // Оборачиваем полученный элемент в div с нужными стилями
     const chartContainer = document.createElement("div");
     chartContainer.className = "category-pie-chart";
-    chartContainer.style.maxWidth = "380px";
-    chartContainer.style.maxHeight = "380px";
-    chartContainer.style.width = "100%";
-    chartContainer.style.height = "100%";
+    chartContainer.style.width = "350px";
+    chartContainer.style.height = "350px";
     chartContainer.appendChild(canvas);
 
     return chartContainer;

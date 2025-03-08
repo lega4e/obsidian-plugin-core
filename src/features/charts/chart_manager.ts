@@ -154,7 +154,6 @@ export class ChartManager {
           new Map(unit.values.map(({ labels }) => [labels[0], labels])),
         ]),
       );
-      console.log(labelMap);
       aggregatedUnits = aggregated.map((unit) => ({
         ...unit,
         values: unit.values.map(({ value, labels }) => [labels[0], value]),

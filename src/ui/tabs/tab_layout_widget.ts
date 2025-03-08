@@ -3,11 +3,11 @@ export interface TabData {
   title: string;
   // Содержимое, отображаемое при выборе вкладки (может быть HTML-строкой или обычным текстом)
   content: (data: TabData) => HTMLElement;
+  setAttrsToTabContent?: (tabContent: HTMLElement) => void;
 }
 
 export class TabsLayoutWidget {
-  public container: HTMLElement;
-  private tabs: TabData[];
+  public container: HTMLElement; private tabs: TabData[];
   private activeTabIndex: number = 0;
   private buttonsContainer: HTMLElement;
   private contentContainer: HTMLElement;
@@ -78,8 +78,13 @@ export class TabsLayoutWidget {
    * Отрисовывает содержимое активной вкладки в contentContainer.
    */
   private renderContent(): void {
-    // Очищаем содержимое контейнера
+    // Очищаем содержимое контейнера и его атрибуты
+    while (this.contentContainer.attributes.length > 0) {
+      this.contentContainer.removeAttribute(this.contentContainer.attributes[0].name);
+    }
     this.contentContainer.innerHTML = "";
+    this.contentContainer.className = "tab-content";
+
     this.contentContainer.appendChild(
       this.tabs[this.activeTabIndex].content(this.tabs[this.activeTabIndex]),
     );

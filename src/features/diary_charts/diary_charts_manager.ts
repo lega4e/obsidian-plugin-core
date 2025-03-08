@@ -37,6 +37,10 @@ export class DiaryChartsManager {
       ...categoryCharts.map((chart, index) => ({
         title: ["Общие категории", "Обобщённые"][index],
         content: () => chart,
+        setAttrsToTabContent: (tabContent: HTMLElement) => {
+          tabContent.style.height = "350px";
+          tabContent.style.width = "350px";
+        },
       })),
       ...historyCharts.map((chart, index) => ({
         title: ["История", "История обобщённая"][index],

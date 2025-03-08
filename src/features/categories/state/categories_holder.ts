@@ -21,10 +21,7 @@ export class CategoriesHolder extends DerivedValueNotifier<
     categoriesConfigHolder: CategoriesConfigHolder,
   ) {
     super([categoriesConfigHolder], ([config], _) =>
-      {
-        console.log("CategoriesHolder() config", config);
-        return !config.value ? undefined : CategoriesHolder.calc(config.value);
-      },
+      !config.value ? undefined : CategoriesHolder.calc(config.value),
     );
   }
 

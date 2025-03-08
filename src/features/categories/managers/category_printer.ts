@@ -186,6 +186,10 @@ export class CategoryPrinter {
           title: info.root.category!.name!,
           content: () =>
             this.charts.makePieChart(info, this.manager.getOtherCategory()),
+          setAttrsToTabContent: (tabContent: HTMLElement) => {
+            tabContent.style.width = "350px";
+            tabContent.style.height = "350px";
+          },
         })),
       );
       this.dv().el("div", widget.container);
@@ -206,6 +210,10 @@ export class CategoryPrinter {
         this.historyInfo.map((history, i) => ({
           title: history[0].date || `История ${i + 1}`,
           content: () => this.charts.makeLineChart(history),
+          setAttrsToTabContent: (tabContent: HTMLElement) => {
+            tabContent.style.height = "350px";
+            tabContent.style.width = "350px";
+          },
         })),
       );
       this.dv().el("div", widget.container);
@@ -224,6 +232,11 @@ export class CategoryPrinter {
           "global": "Обобщённые",
         }[chart.title]!,
         content: () => chart.chart,
+        setAttrsToTabContent: (tabContent: HTMLElement) => {
+          console.log("setAttrsToTabContent", tabContent);
+          tabContent.style.height = "350px";
+          tabContent.style.width = "350px";
+        },
       })),
       ...historyCharts.map((chart) => ({
         title: "История",
