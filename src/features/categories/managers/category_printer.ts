@@ -92,14 +92,14 @@ export class CategoryPrinter {
     this.dv().table(titles, rows);
   }
 
-  buildTimeNote(): void {
+  buildTimeNote(little: boolean = false): void {
     const info = this.infoPacks![0];
 
     if (info[0].totalMinutes == null) {
       return;
     }
 
-    const container = document.createElement("div");
+    const container = document.createElement(!little ? "div" : "span");
     const totalIntervalTime = this.totalIntervalTime;
     const start = this._timeToMinutes(this.pages[0]["Подъём"]);
 
@@ -108,7 +108,7 @@ export class CategoryPrinter {
 
       if (totalTime == null) {
         if (start == null) {
-          container.textContent = `Итого: ${info[0].pretty()}`;
+          container.textContent = !little ? `Итого: ${info[0].pretty()}` : "";
           return;
         }
 
@@ -120,20 +120,31 @@ export class CategoryPrinter {
         totalTime = end - start;
       }
 
-      container.innerHTML =
-        `Итого: ${info[0].pretty()}<br/>Должно: ${formatMinutes(totalTime)}` +
-        (info[0].totalMinutes < totalTime
-          ? `<br/>Нехватка: ${formatMinutes(totalTime - info[0].totalMinutes)}`
-          : totalTime == info[0].totalMinutes
-            ? "<br/>Тютелька в тютельку"
-            : `<br/>Избыток: ${formatMinutes(info[0].totalMinutes - totalTime)}`);
+      if (!little) {
+        container.innerHTML =
+          `Итого: ${info[0].pretty()}<br/>Должно: ${formatMinutes(totalTime)}` +
+          (info[0].totalMinutes < totalTime
+            ? `<br/>Нехватка: ${formatMinutes(totalTime - info[0].totalMinutes)}`
+            : totalTime == info[0].totalMinutes
+              ? "<br/>Тютелька в тютельку"
+              : `<br/>Избыток: ${formatMinutes(info[0].totalMinutes - totalTime)}`);
+      } else {
+        container.textContent =
+          info[0].totalMinutes < totalTime
+            ? ` | -${formatMinutes(totalTime - info[0].totalMinutes)}`
+            : info[0].totalMinutes > totalTime
+              ? ` | +${formatMinutes(info[0].totalMinutes - totalTime)}`
+              : "";
+      }
     };
 
-    container.style.paddingBottom = "8px";
+    if (!little) {
+      container.style.paddingBottom = "8px";
+    }
 
     updateContent();
     setInterval(updateContent, 10000);
-    this.dv().el("div", container);
+    this.dv().el(little ? "span" : "div", container);
   }
 
   buildChart(): void {
