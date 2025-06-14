@@ -1,34 +1,22 @@
-import { inject, injectable } from "inversify";
-import { container } from "src/domain/di/di";
-import { TYPES } from "src/domain/di/types";
-import { DvApi } from "src/domain/interfaces/dv_api";
-import { ValueNotifier, DerivedValueNotifier } from "src/utils/value_notifier";
+import DvApi from "src/domain/interfaces/dv_api";
+import ValueNotifier from "src/utils/notifiers/value_notifier";
+import CategoriesYaml from "../models/categories_yaml";
+import LazyDerivedValueNotifier from "src/utils/notifiers/lazy_derived_notifier";
 
-@injectable()
-export class CategoriesConfigHolder extends DerivedValueNotifier<
-  CategoriesYaml | undefined
-> {
-  constructor(
-    @inject(TYPES.DvApi) private _dv: () => DvApi,
-    @inject(TYPES.CategoriesPathHolder)
-    categoriesPathHolder: ValueNotifier<string>,
-  ) {
+export default class CategoriesConfigHolder extends LazyDerivedValueNotifier<CategoriesYaml | null> {
+  constructor(dv: () => DvApi, categoriesPathHolder: ValueNotifier<string>) {
     super([categoriesPathHolder], ([path], _) => {
-      console.log("CategoriesConfigHolder() path", path);
-      if (path.value === "") {
-        return undefined;
+      if (path.state === "") {
+        return null;
       }
 
-      return CategoriesConfigHolder.calc(_dv(), path.value);
-    });
-  }
+      const file = dv().page(path.state);
+      if (!file) {
+        console.error(`Can't find file '${path.state}'`);
+        return null;
+      }
 
-  static calc(dv: DvApi, path: string): CategoriesYaml | undefined {
-    const file = dv.page(path);
-    if (!file) {
-      console.error(`Can't find file '${path}'`);
-      return undefined;
-    }
-    return file as unknown as CategoriesYaml;
+      return file as unknown as CategoriesYaml;
+    });
   }
 }

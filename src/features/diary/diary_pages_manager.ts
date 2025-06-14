@@ -1,12 +1,21 @@
-import { Page } from "../../domain/interfaces/page";
-import type { DvApi } from "../../domain/interfaces/dv_api";
+import Page from "../../domain/interfaces/page";
+import type DvApi from "../../domain/interfaces/dv_api";
 import { moment } from "obsidian";
-import { inject, injectable } from "inversify";
-import { TYPES } from "src/domain/di/types";
 
-@injectable()
-export class DiaryPagesManager {
-  constructor(@inject(TYPES.DvApi) private dv: () => DvApi) {}
+export default class DiaryPagesManager {
+  constructor(private dv: () => DvApi) {}
+
+  isDay(value: string): boolean {
+    return /^\d{4}-\d{2}-\d{2}$/.test(value);
+  }
+
+  isWeek(value: string): boolean {
+    return /^\d{4}-W\d{2}$/.test(value);
+  }
+
+  isMonth(value: string): boolean {
+    return /^\d{4}-\d{2}$/.test(value);
+  }
 
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
   /* ~~~~~                            EDGES                             ~~~~~ */
@@ -92,7 +101,7 @@ export class DiaryPagesManager {
           (file: Page) =>
             file.file.name >= weekStart &&
             file.file.name <= weekEnd &&
-            file.file.name.length == 10,
+            file.file.name.length == 10
         ),
     ].sort((a: Page, b: Page) => a.file.name.localeCompare(b.file.name));
   }
@@ -107,7 +116,7 @@ export class DiaryPagesManager {
           (file: Page) =>
             file.file.name >= monthStart &&
             file.file.name <= monthEnd &&
-            file.file.name.length == 10,
+            file.file.name.length == 10
         ),
     ].sort((a: Page, b: Page) => a.file.name.localeCompare(b.file.name));
   }
@@ -120,7 +129,7 @@ export class DiaryPagesManager {
         .pages('"Diary/Daily"')
         .filter(
           (file: Page) =>
-            file.file.name.slice(0, 4) == year && file.file.name.length == 10,
+            file.file.name.slice(0, 4) == year && file.file.name.length == 10
         ),
     ].sort((a: Page, b: Page) => a.file.name.localeCompare(b.file.name));
   }

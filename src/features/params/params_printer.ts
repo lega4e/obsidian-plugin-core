@@ -1,80 +1,44 @@
-import type { DvApi } from "src/domain/interfaces/dv_api";
-import { ParamsManager } from "src/features/params/params_manager";
-import { Param } from "src/features/params/models/param";
-import { ChartManager } from "../charts/chart_manager";
-import { inject, injectable } from "inversify";
-import { TYPES } from "src/domain/di/types";
+import DvApi from "src/domain/interfaces/dv_api";
+import CalculatedParamsHolder from "src/features/params/states/calculated_params_holder";
+import ChartManager from "../charts/chart_manager";
 
-@injectable()
-export class ParamsPrinter {
-  private pages: Record<string, any>[];
-  private paramsArray: Param[];
-  private averagedParams?: Param[];
-  private previousAveragedParams?: Param[];
-  private nextAveragedParams?: Param[];
-
+export default class ParamsPrinter {
   constructor(
-    @inject(TYPES.DvApi) private dv: () => DvApi,
-    @inject(TYPES.ParamsManager) private paramsManager: ParamsManager,
-    @inject(TYPES.ChartManager) private charts: ChartManager,
+    private dv: () => DvApi,
+    private charts: ChartManager,
+    private params: CalculatedParamsHolder,
+    private previousParams: CalculatedParamsHolder,
+    private nextParams: CalculatedParamsHolder
   ) {}
 
-  // loadParams – вычисляет средние значения параметров на основе списка страниц.
-  loadParams(
-    pages: Record<string, any>[],
-    previousPages?: Record<string, any>[],
-    nextPages?: Record<string, any>[],
-  ): void {
-    this.pages = pages;
-    this.paramsArray = this.paramsManager.getParametersArray(pages);
-    this.averagedParams = this.paramsManager.calculateAverages(pages);
-    this.previousAveragedParams = undefined;
-    this.nextAveragedParams = undefined;
-    if (previousPages) {
-      this.previousAveragedParams =
-        this.paramsManager.calculateAverages(previousPages);
-    }
-    if (nextPages) {
-      this.nextAveragedParams = this.paramsManager.calculateAverages(nextPages);
-    }
-  }
-
-  // clearParams – очищает сохранённые параметры.
-  clearParams(): void {
-    this.averagedParams = undefined;
-    this.previousAveragedParams = undefined;
-    this.nextAveragedParams = undefined;
-  }
-
-  // buildTable – создаёт таблицу с заголовком ['Название', 'Среднее значение']
-  // и выводит name параметра в первом столбце, а среднее значение (value[0]) – во втором.
-  buildTable(): void {
-    if (!this.averagedParams) {
-      throw new Error("Параметры не загружены. Сначала вызовите loadParams()!");
+  buildAveragesTable(): void {
+    if (!this.params.state) {
+      throw new Error("Параметры не загружены!");
     }
 
     const headers = [
       "Название",
+      ...(this.previousParams.state ? ["Предыдущее"] : []),
       "Среднее значение",
-      ...(this.previousAveragedParams ? ["Предыдущее"] : []),
-      ...(this.nextAveragedParams ? ["Следующее"] : []),
+      ...(this.nextParams.state ? ["Следующее"] : []),
     ];
-    const rows = this.averagedParams.map((param) => [
+    const rows = this.params.state.averages.map((param) => [
       param.name,
-      this._prettyValue(param.values),
-      ...(this.previousAveragedParams
+      ...(this.previousParams.state
         ? [
             this._prettyValue(
-              this.previousAveragedParams?.find((p) => p.name == param.name)
-                ?.values,
+              this.previousParams.state?.averages.find(
+                (p) => p.name == param.name
+              )?.value
             ),
           ]
         : []),
-      ...(this.nextAveragedParams
+      this._prettyValue(param.value),
+      ...(this.nextParams.state
         ? [
             this._prettyValue(
-              this.nextAveragedParams?.find((p) => p.name == param.name)
-                ?.values,
+              this.nextParams.state?.averages.find((p) => p.name == param.name)
+                ?.value
             ),
           ]
         : []),
@@ -83,30 +47,26 @@ export class ParamsPrinter {
     this.dv().table(headers, rows);
   }
 
-  getChart(): HTMLElement {
-    if (this.paramsArray.length == 0 || this.pages.length == 0) {
-      throw new Error("Параметры не загружены. Сначала вызовите loadParams()!");
+  makeChart(): HTMLElement {
+    if (!this.params.state) {
+      throw new Error("Параметры не загружены!");
     }
 
     return this.charts.line(
-      this.paramsArray.map((param) => ({
+      this.params.state.history.map((param) => ({
         label: param.name,
-        values: param.values,
+        values: param.values.map((value) => [value.date, value.value]),
         color: param.color,
         hidden: param.hiddenOnChart || false,
       })),
       0,
       11,
       undefined,
-      1,
+      1
     );
   }
 
-  private _prettyValue(value?: [string, number][]): string {
-    return !value
-      ? ""
-      : value.length > 0
-        ? value[0][1].toFixed(1).replace(/\./g, ",")
-        : "undefined";
+  private _prettyValue(value?: number): string {
+    return !value ? "" : value.toFixed(1).replace(/\./g, ",");
   }
 }

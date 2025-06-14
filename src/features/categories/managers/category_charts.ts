@@ -1,17 +1,15 @@
-import { ChartManager } from "src/features/charts/chart_manager";
-import { formatMinutes, Item } from "../models/item";
-import { Category } from "../models/category";
-import { inject, injectable } from "inversify";
-import { TYPES } from "src/domain/di/types";
-import { CategoriesHolder } from "../state/categories_holder";
-import { CategoryData, HistoryInfo } from "../models/interfaces";
+import ChartManager, {
+  LineChartDataUnit,
+} from "src/features/charts/chart_manager";
+import { formatMinutes } from "../models/item";
+import Category from "../models/category";
+import {
+  CalculatedCategory,
+  CalculatedCategoryDated,
+} from "../state/calculated_categories_holder";
 
-@injectable()
-export class CategoryCharts {
-  constructor(
-    @inject(TYPES.ChartManager) private charts: ChartManager,
-    @inject(TYPES.CategoriesHolder) private categoriesHolder: CategoriesHolder,
-  ) {}
+export default class CategoryCharts {
+  constructor(private charts: ChartManager) {}
 
   /**
    * Возвращает HTMLElement с построенной диаграммой.
@@ -20,34 +18,36 @@ export class CategoryCharts {
    * @returns HTMLElement, содержащий диаграмму.
    */
   public makePieChart(
-    chartInfo: CategoryData,
-    otherCategory: Category,
+    categories: CalculatedCategory[],
+    otherCategory: Category
   ): HTMLElement {
-    const { root, items } = chartInfo;
+    const totalMinutes = categories.reduce(
+      (acc, cat) => acc + cat.totalMinutes,
+      0
+    );
 
-    // Создаем диаграмму через ChartManager. Метод pie возвращает элемент canvas или подобный.
     const canvas = this.charts.pie(
-      items.map((item) => ({
-        label: item.category!.name!,
-        value: item.totalMinutes,
-        color: item.category!.color!,
-        tip: this._item2tip(item.totalMinutes, root.totalMinutes, [item]),
+      categories.map((cat) => ({
+        label: cat.prettyName,
+        value: cat.totalMinutes,
+        color: cat.color,
+        tip: this.category2tip(cat.totalMinutes, totalMinutes, [cat]),
       })),
       {
-        label: otherCategory.name,
+        label: otherCategory.prettyName,
         value: 0,
-        color: otherCategory.color!,
+        color: otherCategory.color,
         tip: (value: number, labels?: string[]) =>
-          this._item2tip(
+          this.category2tip(
             value,
-            root.totalMinutes,
+            totalMinutes,
             Array.from(
               labels?.map(
-                (label) => items.find((item) => item.category!.name == label)!,
-              ) ?? [],
-            ),
+                (label) => categories.find((cat) => cat.prettyName == label)!
+              ) ?? []
+            )
           ),
-      },
+      }
     );
 
     canvas.height = 350;
@@ -65,50 +65,47 @@ export class CategoryCharts {
     return chartContainer;
   }
 
-  makeLineChart(chartInfo: HistoryInfo): HTMLElement {
-    const items = chartInfo.map(({ items }) => items).flat();
-    const categories = items.map((item) => item.category!.name!).unique();
+  makeLineChart(
+    categories: Record<string, CalculatedCategoryDated[]>,
+    totalDateMinutes: Record<string, number>
+  ): HTMLElement {
+    const units: LineChartDataUnit[] = Object.entries(categories).map(
+      ([_, catHistory]) => ({
+        label: catHistory.first()!.prettyName,
+        values: catHistory.map((cat) => [cat.date, cat.totalMinutes]),
+        color: catHistory.first()!.color,
+        hidden: catHistory.first()!.hideOnLineChart,
+      })
+    );
 
-    const units = categories.map((category) => ({
-      label: category,
-      values: chartInfo.map(
-        ({ date, items }) =>
-          [
-            date,
-            items.find((item) => item.category!.name == category)
-              ?.totalMinutes ?? 0,
-          ] as [string, number],
-      ),
-      color: items.find((item) => item.category?.name == category)!.category!
-        .color!,
-      hidden: items.find((item) => item.category?.name == category)!.category!
-        .hideOnLineChart,
-    }));
+    units.forEach((unit) =>
+      unit.values.sort((a, b) => a[0].localeCompare(b[0]))
+    );
 
     const canvas = this.charts.line(
       units,
       undefined,
       undefined,
-      (category, value, dates) => {
-        let info = chartInfo.filter(({ date }) => dates.includes(date));
+      (category, _, dates) => {
+        const cats = Object.entries(categories)
+          .find(
+            ([_, catHistory]) => catHistory.first()?.prettyName == category
+          )![1]
+          .filter((cat) => dates.includes(cat.date));
 
-        let items = Item.aggregate(
-          info
-            .map(({ items }) => items)
-            .flat()
-            .filter((item) => item.category!.name == category)
-            .map((item) => item.leafs())
-            .flat(),
-          this.categoriesHolder.value?.discardComments,
-        );
-
-        return items.length > 0
-          ? this._item2tip(value, info[0].root.totalMinutes, items)
-          : [category];
+        return cats.length > 0
+          ? this.category2tip(
+              cats.reduce((acc, cat) => acc + cat.totalMinutes, 0),
+              dates
+                .map((date) => totalDateMinutes[date])
+                .reduce((acc, minutes) => acc + minutes, 0),
+              cats
+            )
+          : [];
       },
       60,
       formatMinutes,
-      15,
+      15
     );
 
     const chartContainer = document.createElement("div");
@@ -123,35 +120,29 @@ export class CategoryCharts {
 
   /**
    * Форматирует значение в виде строки с процентным соотношением.
-   * @param value значение для форматирования.
+   * @param value значение для форматирования (одной категории в целом).
    * @param totalMinutes общее значение для вычисления процента.
    * @returns Строка с отформатированным значением и процентом.
    */
-  private _item2tip(
+  private category2tip(
     value: number,
     totalMinutes: number,
-    items: Item[],
+    category: CalculatedCategory[]
   ): string[] {
     return [
       formatMinutes(value) +
         "; " +
         ((value / totalMinutes) * 100).toFixed(1).replace(".", ",") +
         "%",
-      ...items
-        .flatMap((item) =>
-          item.prettyLeafs(this.categoriesHolder.value?.discardComments),
-        )
-        .sort((a, b) => b.totalMinutes - a.totalMinutes)
+      ...category
+        .flatMap((u) => u.units)
+        .sort((a, b) => b.minutes - a.minutes)
         .map(
           (c) =>
-            c.category!.name! +
-            (this.categoriesHolder.value?.discardComments &&
-            c.comment &&
-            c.comment != ""
-              ? ` (${c.comment})`
-              : "") +
+            c.certainCategory +
+            (c.comment && c.comment != "" ? ` (${c.comment})` : "") +
             " " +
-            c.pretty(),
+            formatMinutes(c.minutes)
         ),
     ];
   }

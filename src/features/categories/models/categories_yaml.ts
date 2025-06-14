@@ -1,9 +1,9 @@
-interface CategoryPackYaml {
+export interface CategoryPackYaml {
   type: string;
   prettyName: string;
   categories: Array<{
     name: string;
-    color?: string;
+    color: string;
     parents?: string[];
     skipOnDiagramm?: boolean;
     hideOnLineChart?: boolean;
@@ -11,11 +11,12 @@ interface CategoryPackYaml {
   isCertain?: boolean;
 }
 
-interface CategoriesYaml {
+export default interface CategoriesYaml {
   options: {
-    discardComments: number;
+    discardCommentsLevel: number;
+    itemsFieldName: string;
   };
-  categories_packs: CategoryPackYaml[];
+  categoriesPacks: CategoryPackYaml[];
   otherCategory: {
     name: string;
     color: string;

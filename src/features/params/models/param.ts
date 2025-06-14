@@ -1,3 +1,7 @@
+export default interface ParamsYaml {
+  params: ParamYaml[];
+}
+
 export interface ParamYaml {
   name: string;
   order: number;
@@ -5,16 +9,22 @@ export interface ParamYaml {
   hiddenOnChart?: boolean;
 }
 
-export interface ParamsYaml {
-  params: ParamYaml[];
+export interface ParamValue {
+  date: string;
+  value: number;
 }
 
-export class Param {
-  constructor(
-    public name: string,
-    public order: number,
-    public values: [string, number][],
-    public color?: string,
-    public hiddenOnChart?: boolean,
-  ) {}
+export interface ParamInfo {
+  name: string;
+  order: number;
+  color?: string;
+  hiddenOnChart?: boolean;
 }
+
+export type Param = {
+  value: number;
+} & ParamInfo;
+
+export type ParamHistory = {
+  values: ParamValue[];
+} & ParamInfo;

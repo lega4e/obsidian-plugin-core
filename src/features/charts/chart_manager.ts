@@ -1,6 +1,5 @@
 import Chart from "chart.js/auto";
 import ChartDataLabels from "chartjs-plugin-datalabels";
-import { injectable } from "inversify";
 
 export interface PieChartDataUnit {
   label: string;
@@ -19,8 +18,7 @@ export interface LineChartDataUnit {
   hidden: boolean;
 }
 
-@injectable()
-export class ChartManager {
+export default class ChartManager {
   /**
    * Строит круговую диаграмму.
    * @param data Массив объектов с данными для каждого набора.
@@ -29,7 +27,7 @@ export class ChartManager {
    */
   pie(
     data: PieChartDataUnit[],
-    otherDataUnit?: PieChartDataUnit,
+    otherDataUnit?: PieChartDataUnit
   ): HTMLCanvasElement {
     if (data.length == 0) {
       throw new Error("Data is empty");
@@ -44,18 +42,18 @@ export class ChartManager {
     let otherLabels: string[] = [];
 
     if (otherDataUnit) {
-      [labels, values, otherLabels] = this._shrinkToOther(
+      [labels, values, otherLabels] = ChartManager._shrinkToOther(
         labels,
         values,
         otherDataUnit,
-        1 / 20,
+        1 / 20
       );
       data.push(otherDataUnit);
     }
 
     const colors = labels
       .map((label) => data.find((item) => item.label == label))
-      .map((item) => item!.color ?? this._generateColor(item!.label));
+      .map((item) => item!.color ?? ChartManager._generateColor(item!.label));
 
     new Chart(canvas, {
       type: "pie",
@@ -89,15 +87,17 @@ export class ChartManager {
           tooltip: {
             callbacks: {
               label: (tooltipItem) => {
-                let item = data.find((item) => item.label == tooltipItem.label);
-                let tip = item?.tip;
+                const item = data.find(
+                  (item) => item.label == tooltipItem.label
+                );
+                const tip = item?.tip;
 
                 if (typeof tip == "function") {
                   return tip(
                     tooltipItem.raw as number,
                     item?.label == otherDataUnit?.label
                       ? otherLabels
-                      : undefined,
+                      : undefined
                   );
                 }
                 return tip;
@@ -117,18 +117,18 @@ export class ChartManager {
    * @param units Массив объектов с данными для каждого набора.
    * @returns HTMLCanvasElement с построенным графиком.
    */
-  public line(
+  line(
     units: LineChartDataUnit[],
     minY?: number,
     maxY?: number,
     labelCallback?: (
       category: string,
       value: number,
-      date: string[],
+      date: string[]
     ) => string[],
     tickStepSize?: number,
     tickCallback?: (value: number) => string,
-    maxPoints: number = 15,
+    maxPoints: number = 15
   ): HTMLCanvasElement {
     const canvas = document.createElement("canvas");
 
@@ -139,20 +139,20 @@ export class ChartManager {
     const allSameX = allXValues.every(
       (xValues) =>
         xValues.length === firstXValues.length &&
-        xValues.every((x, i) => x === firstXValues[i]),
+        xValues.every((x, i) => x === firstXValues[i])
     );
 
     let labelMap = null;
     if (allSameX) {
-      let aggregated = units.map((unit) => ({
+      const aggregated = units.map((unit) => ({
         ...unit,
-        values: this._aggregateDataPoints(unit.values, maxPoints),
+        values: ChartManager._aggregateDataPoints(unit.values, maxPoints),
       }));
       labelMap = new Map<string, Map<string, string[]>>(
         aggregated.map((unit) => [
           unit.label,
           new Map(unit.values.map(({ labels }) => [labels[0], labels])),
-        ]),
+        ])
       );
       aggregatedUnits = aggregated.map((unit) => ({
         ...unit,
@@ -166,7 +166,7 @@ export class ChartManager {
         datasets: aggregatedUnits.map((unit) => ({
           label: unit.label,
           data: unit.values,
-          borderColor: unit.color ?? this._generateColor(unit.label),
+          borderColor: unit.color ?? ChartManager._generateColor(unit.label),
           fill: false,
           tension: 0.4,
           hidden: unit.hidden,
@@ -184,7 +184,7 @@ export class ChartManager {
                   context.parsed.y,
                   labelMap?.get(context.dataset.label!)?.get(context.label) ?? [
                     context.label,
-                  ],
+                  ]
                 ) ?? context.formattedValue,
             },
           },
@@ -205,11 +205,11 @@ export class ChartManager {
     return canvas;
   }
 
-  private _shrinkToOther(
+  private static _shrinkToOther(
     labels: string[],
     values: number[],
     otherDataUnit: PieChartDataUnit,
-    ratio: number,
+    ratio: number
   ): [string[], number[], string[]] {
     let otherLabels: string[] = [];
     const total = values.reduce((a, b) => a + b, 0);
@@ -235,12 +235,12 @@ export class ChartManager {
   }
 
   // Новый приватный метод для генерации цвета
-  private _generateColor(label: string): string {
+  private static _generateColor(label: string): string {
     const hash = label.split("").reduce((acc, char) => {
       return char.charCodeAt(0) + ((acc << 5) - acc);
     }, 0);
     const c = (hash & 0x00ffffff).toString(16).toUpperCase();
-    let generatedColor = "#" + "00000".substring(0, 6 - c.length) + c;
+    const generatedColor = "#" + "00000".substring(0, 6 - c.length) + c;
 
     // Приглушаем цвет, смешивая с серым
     const r = parseInt(generatedColor.slice(1, 3), 16);
@@ -255,9 +255,9 @@ export class ChartManager {
   }
 
   // Добавляем новый приватный метод для агрегации точек
-  private _aggregateDataPoints(
+  private static _aggregateDataPoints(
     points: [string, number][],
-    maxPoints: number,
+    maxPoints: number
   ): { label: string; value: number; labels: string[] }[] {
     if (points.length <= maxPoints) {
       return points.map(([label, value]) => ({

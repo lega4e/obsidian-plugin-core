@@ -1,6 +1,6 @@
-import { Page } from "./page";
+import Page from "./page";
 
-export interface DvApi {
+export default interface DvApi {
   container(chart: HTMLElement): void;
   page(path: string): Page;
   pages(path: string): Page[];

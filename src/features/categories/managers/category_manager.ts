@@ -1,105 +1,183 @@
-import { Category } from "../models/category";
-import { Item } from "../models/item";
-import { inject, injectable } from "inversify";
-import { TYPES } from "src/domain/di/types";
-import { CategoriesHolder, CategoriesState } from "../state/categories_holder";
-import { CategoryData, HistoryInfo, HistoryDayInfo } from "../models/interfaces";
+import Item from "../models/item";
+import { CategoriesState } from "../state/categories_holder";
+import {
+  CalculatedCategories,
+  CalculatedCategory,
+  CalculatedCategoryDated,
+} from "../state/calculated_categories_holder";
+import Category from "../models/category";
 
-@injectable()
-export class CategoryManager {
-  constructor(
-    @inject(TYPES.CategoriesHolder)
-    private categories: CategoriesHolder,
-  ) {}
+export default class CategoryManager {
+  constructor() {}
 
-  loadPages(pages: Record<string, any>[]): void {
-    this._loadItems(pages);
-  }
+  static calc(
+    categories: CategoriesState,
+    items: Item[]
+  ): CalculatedCategories {
+    const averages: Record<string, CalculatedCategory> = {};
+    const historyMap: Record<string, Record<string, CalculatedCategory>> = {}; // date -> category -> unit
+    const totalDateMinutes: Record<string, number> = {};
+    let totalMinutes = 0;
 
-  clearPages(): void {
-    this._clearCategoriesItems();
-  }
+    for (const item of items) {
+      const comment = this.discardComment(
+        item,
+        categories.discardCommentsLevel
+      );
 
-  calculate(packType: string, date?: string): CategoryData {
-    const categories = this._getCategories();
-
-    const pack = categories.packs.find((p) => p.type == packType);
-    if (!pack) {
-      throw new Error(`Pack type ${packType} not found`);
-    }
-
-    const rootCategory = new Category(pack.prettyName, [], pack.categories);
-    let [root, items] = rootCategory.summarizeWithItems(date);
-    items = items.filter((item) => item.totalMinutes != 0);
-    items = items.sort((a, b) => b.totalMinutes - a.totalMinutes);
-    return { root, items };
-  }
-
-  calculateArray(
-    packType: string,
-    dates: string[],
-  ): HistoryInfo {
-    return dates.map((date) => ({ date, ...this.calculate(packType, date) }));
-  }
-
-  getOtherCategory(): Category {
-    return this._getCategories().otherCategory;
-  }
-
-  private _getCategories(): CategoriesState {
-    const categories = this.categories.value;
-    if (!categories) {
-      throw new Error("Categories not found");
-    }
-
-    return categories;
-  }
-
-  private _clearCategoriesItems() {
-    for (const pack of this._getCategories().packs) {
-      for (const category of pack.categories) {
-        category.clear();
+      const certainCategory = categories.allCategories.get(item.categoryName);
+      if (!certainCategory) {
+        throw new Error(`Category ${item.categoryName} not found`);
       }
-    }
-  }
 
-  private _loadItems(pages: Record<string, any>[]): void {
-    this._clearCategoriesItems();
-    pages = pages.filter((page) => page["Времяучёт"]);
-
-    for (const page of pages) {
-      const entries = page["Времяучёт"];
-      for (const entry of entries) {
-        const match = entry.match(
-          /^([^\d()]*)\s*(?:\((.*?)\))?\s*(?:(\d+)ч\.?)?\s*(?:(\d+)м\.?)?$/,
+      [certainCategory, ...this.getAllParents(certainCategory)].forEach((c) => {
+        this.pushUnitToAverages(
+          averages,
+          c,
+          certainCategory,
+          comment,
+          item.minutes
         );
+        this.pushUnitToHistory(
+          historyMap,
+          c,
+          certainCategory,
+          comment,
+          item.minutes,
+          item.date
+        );
+      });
+      totalDateMinutes[item.date] =
+        (totalDateMinutes[item.date] ?? 0) + item.minutes;
 
-        if (match) {
-          const category = match[1].trim();
-          const minutes =
-            parseInt(match[3] || "0") * 60 + parseInt(match[4] || "0");
-
-          const certainCategory =
-            this._getCategories().certainPack.categories.find(
-              (c) => c.name == category,
-            );
-          if (!certainCategory) {
-            throw new Error(`Не найдено конкретной категории ${category}`);
-          }
-
-          certainCategory.items.push(
-            new Item(
-              certainCategory,
-              minutes,
-              match[2],
-              undefined,
-              page.file.name,
-            ),
-          );
-        } else {
-          throw new Error(`error with match ${entry} | ${match}`);
-        }
-      }
+      totalMinutes += item.minutes;
     }
+
+    const history: Record<string, CalculatedCategoryDated[]> = {};
+    for (const [catName, catMap] of Object.entries(historyMap)) {
+      history[catName] = Object.entries(catMap).map(([date, cat]) => ({
+        ...cat,
+        date,
+      }));
+    }
+
+    return {
+      averages,
+      history,
+      totalMinutes,
+      totalDateMinutes,
+    };
+  }
+
+  private static pushUnitToAverages(
+    averages: Record<string, CalculatedCategory>,
+    category: Category,
+    certainCategory: Category,
+    comment: string | null,
+    minutes: number
+  ): void {
+    const cat = averages[category.name];
+
+    if (!cat) {
+      averages[category.name] = this.makeCalculatedCategory(
+        category,
+        certainCategory,
+        comment,
+        minutes
+      );
+    } else {
+      this.putUnitUnitCategory(cat, certainCategory, minutes, comment);
+    }
+  }
+
+  private static pushUnitToHistory(
+    history: Record<string, Record<string, CalculatedCategory>>,
+    category: Category,
+    certainCategory: Category,
+    comment: string | null,
+    minutes: number,
+    date: string
+  ): void {
+    let catMap = history[category.name];
+    if (!catMap) {
+      catMap = {};
+      history[category.name] = catMap;
+    }
+
+    const cat = catMap[date];
+    if (!cat) {
+      catMap[date] = this.makeCalculatedCategory(
+        category,
+        certainCategory,
+        comment,
+        minutes
+      );
+    } else {
+      this.putUnitUnitCategory(cat, certainCategory, minutes, comment);
+    }
+  }
+
+  private static putUnitUnitCategory(
+    category: CalculatedCategory,
+    certainCategory: Category,
+    minutes: number,
+    comment: string | null
+  ) {
+    category.totalMinutes += minutes;
+    const unit = category.units.find(
+      (u) =>
+        u.comment == comment && u.certainCategory == certainCategory.prettyName
+    );
+    if (unit) {
+      unit.minutes += minutes;
+    } else {
+      category.units.push({
+        minutes,
+        comment,
+        certainCategory: certainCategory.prettyName,
+      });
+    }
+  }
+
+  private static makeCalculatedCategory(
+    category: Category,
+    certainCategory: Category,
+    comment: string | null,
+    minutes: number
+  ): CalculatedCategory {
+    return {
+      name: category.name,
+      prettyName: category.prettyName,
+      totalMinutes: minutes,
+      color: category.color,
+      hideOnLineChart: category.hideOnLineChart,
+      units: [
+        {
+          minutes,
+          comment,
+          certainCategory: certainCategory.prettyName,
+        },
+      ],
+    };
+  }
+
+  private static discardComment(
+    item: Item,
+    discardCommentsLevel: number
+  ): string | null {
+    return !discardCommentsLevel
+      ? null
+      : item.comment
+          ?.split(";")
+          .map((s) => s.trim())
+          .slice(0, discardCommentsLevel)
+          .join("; ") ?? null;
+  }
+
+  private static getAllParents(category: Category): Category[] {
+    return [
+      ...category.parents,
+      ...category.parents.flatMap((p) => this.getAllParents(p)),
+    ];
   }
 }
