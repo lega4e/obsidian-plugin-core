@@ -22,10 +22,26 @@ export default class TimeNoteManager {
       );
     }
 
+    let minutesStart = null;
+    let minutesEnd = null;
+    let missingMinutes = null;
+    if (pages.length == 1) {
+      const page = pages[0];
+      const specified = this.calcDailyTotalTime(page, true);
+      if (specified != null) {
+        missingMinutes = specified - countedMinutes;
+      }
+      minutesStart = this.timeToMinutes(page["Подъём"]);
+      minutesEnd = this.timeToMinutes(page["Отбой"]);
+    }
+
     return {
       fullIntervalMinutes,
       countedMinutes,
       specifiedIntervalMinutes,
+      minutesStart,
+      minutesEnd,
+      missingMinutes,
     };
   }
 

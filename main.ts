@@ -20,6 +20,7 @@ export default class Lega4eCorePlugin extends Plugin {
 
   async onload() {
     this.di = new Di();
+    this.di.app = this.app;
     await this.loadSettings();
     this.addSettingTab(new Lega4eCorePluginSettingTab(this.app, this));
     this.registerApi();

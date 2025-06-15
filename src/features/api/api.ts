@@ -5,9 +5,19 @@ import CategoryPrinter from "src/features/categories/printers/category_printer";
 import ParamsPrinter from "src/features/params/params_printer";
 import ValueNotifier from "src/utils/notifiers/value_notifier";
 import DerivedValueNotifier from "src/utils/notifiers/derived_notifier";
+import DvApi from "src/domain/interfaces/dv_api";
+import { App } from "obsidian";
+import EnterCategoryWidget from "../categories/ui/enter_category_widget";
+import CategoriesHolder from "../categories/state/categories_holder";
+import AllCommentsHolder from "../categories/state/all_comments_holder";
+import CategoryScoreHolder from "../categories/state/category_score_holder";
+import FrontmatterManager from "../categories/managers/frontmatter_manager";
+import TimeNoteHolder from "../categories/state/time_note_holder";
 
 export default class Api {
   constructor(
+    private dv: () => DvApi,
+    private app: () => App,
     private diaryPagesManager: DiaryPagesManager,
     private tabsPrinter: TabsPrinter,
     private timeNotePrinter: TimeNotePrinter,
@@ -16,7 +26,13 @@ export default class Api {
     private pagesHolder: ValueNotifier<Record<string, any>[]>,
     private paramPagesHolder: DerivedValueNotifier<Record<string, any>[]>,
     private previousParamPagesHolder: ValueNotifier<Record<string, any>[]>,
-    private nextParamPagesHolder: ValueNotifier<Record<string, any>[]>
+    private nextParamPagesHolder: ValueNotifier<Record<string, any>[]>,
+    private categoriesHolder: CategoriesHolder,
+    private commentsHolder: AllCommentsHolder,
+    private commentPagesHolder: ValueNotifier<Record<string, any>[]>,
+    private categoryScoreHolder: CategoryScoreHolder,
+    private frontmatterManager: FrontmatterManager,
+    private timeNoteHolder: TimeNoteHolder
   ) {}
 
   // PAGES
@@ -79,5 +95,24 @@ export default class Api {
 
   buildParamsAveragesTable(): void {
     this.paramsPrinter.buildAveragesTable();
+  }
+
+  buildEnterCategoryWidget(): void {
+    const container = document.createElement("div");
+    container.classList.add("autocomplete-container");
+    this.dv().el("div", container);
+
+    new EnterCategoryWidget(
+      container,
+      this.dv,
+      this.app,
+      this.categoriesHolder,
+      this.commentsHolder,
+      this.commentPagesHolder,
+      this.categoryScoreHolder,
+      this.frontmatterManager,
+      this.timeNoteHolder,
+      this.pagesHolder
+    ).attach();
   }
 }

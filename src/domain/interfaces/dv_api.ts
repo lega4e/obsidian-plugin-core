@@ -1,6 +1,7 @@
 import Page from "./page";
 
 export default interface DvApi {
+  current(): Record<string, any>[];
   container(chart: HTMLElement): void;
   page(path: string): Page;
   pages(path: string): Page[];

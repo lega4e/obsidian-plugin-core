@@ -18,8 +18,15 @@ import DiaryPagesManager from "src/features/diary/diary_pages_manager";
 import TimeNotePrinter from "src/features/categories/printers/time_note_printer";
 import TimeNoteHolder from "src/features/categories/state/time_note_holder";
 import Api from "src/features/api/api";
+import { App } from "obsidian";
+import AllCommentsHolder from "src/features/categories/state/all_comments_holder";
+import CommentsAndCategoryScoreHolder from "src/features/categories/state/comments_and_category_score_holder";
+import CategoryScoreHolder from "src/features/categories/state/category_score_holder";
+import FrontmatterManager from "src/features/categories/managers/frontmatter_manager";
+import LazyDerivedValueNotifier from "src/utils/notifiers/lazy_derived_notifier";
 
 export default class Di {
+  app: App | null = null;
   dv: DvApi | null = null;
 
   // CONFIG
@@ -44,6 +51,7 @@ export default class Di {
 
   // PAGES
   pagesHolder = new ValueNotifier<Record<string, any>[]>([]);
+  commentPagesHolder = new ValueNotifier<Record<string, any>[]>([]);
 
   paramPagesHolder = new DerivedValueNotifier<Record<string, any>[]>(
     [this.pagesHolder],
@@ -57,8 +65,9 @@ export default class Di {
     () => this.pagesHolder.state
   );
 
-  // COMMON
+  // SERVICE
   chartsManager = new ChartManager();
+
   diaryPagesManager = new DiaryPagesManager(() => this.dv!);
 
   // PARAMS
@@ -97,6 +106,17 @@ export default class Di {
     this.categoriesHolder
   );
 
+  commentsAndCategoryScoreHolder = new CommentsAndCategoryScoreHolder(
+    this.commentPagesHolder,
+    this.categoriesHolder
+  );
+
+  categoryScoreHolder = new CategoryScoreHolder(
+    this.commentsAndCategoryScoreHolder
+  );
+
+  commentsHolder = new AllCommentsHolder(this.commentsAndCategoryScoreHolder);
+
   calculatedCategoriesHolder = new CalculatedCategoriesHolder(
     this.categoriesHolder,
     this.itemsHolder
@@ -122,7 +142,7 @@ export default class Di {
     this.categoryPagesHolder
   );
 
-  // TABS
+  // COMMON
   tabsPrinter = new TabsPrinter(
     () => this.dv!,
     this.tabsConfigHolder,
@@ -130,8 +150,19 @@ export default class Di {
     this.categoriesPrinter
   );
 
+  frontmatterManager = new FrontmatterManager(
+    () => this.app!,
+    new LazyDerivedValueNotifier<string | null>(
+      [this.categoriesConfigHolder],
+      () => this.categoriesConfigHolder.state?.options.itemsFieldName ?? null
+    ),
+    this.categoriesHolder
+  );
+
   // API
   api = new Api(
+    () => this.dv!,
+    () => this.app!,
     this.diaryPagesManager,
     this.tabsPrinter,
     this.timeNotePrinter,
@@ -140,6 +171,12 @@ export default class Di {
     this.pagesHolder,
     this.paramPagesHolder,
     this.previousParamPagesHolder,
-    this.nextParamPagesHolder
+    this.nextParamPagesHolder,
+    this.categoriesHolder,
+    this.commentsHolder,
+    this.commentPagesHolder,
+    this.categoryScoreHolder,
+    this.frontmatterManager,
+    this.timeNoteHolder
   );
 }

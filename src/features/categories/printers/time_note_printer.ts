@@ -58,7 +58,7 @@ export default class TimeNotePrinter {
     }
 
     updateContent();
-    setInterval(updateContent, 10000);
+    setInterval(updateContent, 1000);
     this.dv().el(little ? "span" : "div", container);
   }
 

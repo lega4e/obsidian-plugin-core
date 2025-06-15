@@ -10,6 +10,10 @@ export interface CategoriesState {
   otherCategory: Category;
   discardCommentsLevel: number;
   itemsFieldName: string;
+  fastButtonsCategories: {
+    category: string;
+    text: string;
+  }[];
 }
 
 export default class CategoriesHolder extends LazyDerivedValueNotifier<CategoriesState | null> {

@@ -53,7 +53,7 @@ export default class CategoryConfigManager {
       packs.push(pack);
     }
 
-    const val = {
+    return {
       packs,
       certainPack: certainPack!,
       allCategories: allCategories,
@@ -68,8 +68,7 @@ export default class CategoryConfigManager {
       },
       discardCommentsLevel: config.options.discardCommentsLevel ?? 99,
       itemsFieldName: config.options.itemsFieldName,
+      fastButtonsCategories: config.fastButtonsCategories,
     };
-
-    return val;
   }
 }

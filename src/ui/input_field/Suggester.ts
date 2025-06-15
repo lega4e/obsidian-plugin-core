@@ -2,30 +2,35 @@ import { FuzzySuggestModal } from "obsidian";
 import type { FuzzyMatch, App } from "obsidian";
 
 export default class Suggester<T> extends FuzzySuggestModal<T> {
-  private resolvePromise: (value: T) => void;
-  private rejectPromise: (reason?: unknown) => void;
-  public promise: Promise<T>;
+  private resolvePromise: (value: T | null) => void;
   private resolved: boolean;
+  public promise: Promise<T | null>;
 
-  public static Suggest<T>(app: App, displayItems: string[], items: T[]) {
-    const newSuggester = new Suggester(app, displayItems, items);
-    return newSuggester.promise;
+  public static suggest<T>(
+    app: App,
+    item2str: (item: T) => string,
+    itemsGetter: () => T[],
+    str2item?: (str: string) => T,
+    inputEqualsItem?: (input: string, item: T) => boolean
+  ) {
+    return new Suggester(app, item2str, itemsGetter, str2item, inputEqualsItem)
+      .promise;
   }
 
   public constructor(
     app: App,
-    private displayItems: string[],
-    private items: T[]
+    private item2str: (item: T) => string,
+    private itemsGetter: () => T[],
+    private str2item?: (str: string) => T,
+    private inputEqualsItem?: (input: string, item: T) => boolean
   ) {
     super(app);
 
-    this.promise = new Promise<T>((resolve, reject) => {
+    this.promise = new Promise<T | null>((resolve) => {
       this.resolvePromise = resolve;
-      this.rejectPromise = reject;
     });
 
     this.inputEl.addEventListener("keydown", (event: KeyboardEvent) => {
-      // chooser is undocumented & not officially a part of the Obsidian API, hence the precautions in using it.
       if (event.code !== "Tab" || !("chooser" in this)) {
         return;
       }
@@ -46,27 +51,43 @@ export default class Suggester<T> extends FuzzySuggestModal<T> {
     this.open();
   }
 
-  getItemText(item: T): string {
-    return this.displayItems[this.items.indexOf(item)];
+  override getItemText(item: T): string {
+    return this.item2str(item);
   }
 
-  getItems(): T[] {
-    return this.items;
+  override getItems(): T[] {
+    let items = this.itemsGetter();
+    if (this.str2item) {
+      const additionalItem = this.str2item(this.inputEl.value);
+      items = !items.some(
+        (item) =>
+          this.inputEqualsItem?.(this.inputEl.value, item) ??
+          this.item2str(item).toLowerCase() ==
+            this.item2str(additionalItem).toLowerCase()
+      )
+        ? [...items, additionalItem]
+        : items;
+    }
+    return items;
   }
 
-  selectSuggestion(value: FuzzyMatch<T>, evt: MouseEvent | KeyboardEvent) {
+  override selectSuggestion(
+    value: FuzzyMatch<T>,
+    evt: MouseEvent | KeyboardEvent
+  ) {
     this.resolved = true;
     super.selectSuggestion(value, evt);
   }
 
-  onChooseItem(item: T, evt: MouseEvent | KeyboardEvent): void {
+  override onChooseItem(item: T, evt: MouseEvent | KeyboardEvent): void {
     this.resolved = true;
     this.resolvePromise(item);
   }
 
-  onClose() {
+  override onClose() {
     super.onClose();
-
-    if (!this.resolved) this.rejectPromise("no input given.");
+    if (!this.resolved) {
+      this.resolvePromise(null);
+    }
   }
 }

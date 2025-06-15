@@ -7,6 +7,9 @@ export interface TimeNoteState {
   fullIntervalMinutes: number; // Общее время суток/недели/месяца/года
   countedMinutes: number; // Сумма айтемов
   specifiedIntervalMinutes: number | null; // Отбой - подъём
+  minutesStart: number | null; // Подъём (для одиночных страниц)
+  minutesEnd: number | null; // Отбой (для одиночных страниц)
+  missingMinutes: number | null; // Сколько минут не хватает (для одиночных страниц)
 }
 
 export default class TimeNoteHolder extends LazyDerivedValueNotifier<TimeNoteState> {

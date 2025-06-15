@@ -12,6 +12,10 @@ export interface CategoryPackYaml {
 }
 
 export default interface CategoriesYaml {
+  fastButtonsCategories: {
+    category: string;
+    text: string;
+  }[];
   options: {
     discardCommentsLevel: number;
     itemsFieldName: string;
