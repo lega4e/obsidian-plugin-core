@@ -13,10 +13,11 @@ export default class ItemManager {
     itemsFieldName: string
   ): Item[] {
     return pages
-      .map((page) =>
-        page[itemsFieldName].map((entry: string) =>
-          this.parseEntry(entry, categories, page.file.name)
-        )
+      .map(
+        (page) =>
+          page[itemsFieldName]?.map((entry: string) =>
+            this.parseEntry(entry, categories, page.file.name)
+          ) ?? []
       )
       .flat();
   }

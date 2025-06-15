@@ -21,6 +21,12 @@ export default class CategoryCharts {
     categories: CalculatedCategory[],
     otherCategory: Category
   ): HTMLElement {
+    if (categories.length == 0) {
+      const div = document.createElement("div");
+      div.innerHTML = "Времяучёт не заполнен";
+      return div;
+    }
+
     const totalMinutes = categories.reduce(
       (acc, cat) => acc + cat.totalMinutes,
       0

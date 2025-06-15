@@ -29,6 +29,7 @@ export default class CategoryPrinter {
   ): {
     titles: string[];
     rows: string[][];
+    onEmptyHTML: string;
   } {
     const packs = packTypes.map((packType) => {
       const pack = this.categoriesHolder.state!.packs.find(
@@ -71,7 +72,7 @@ export default class CategoryPrinter {
       );
     }
 
-    return { titles, rows };
+    return { titles, rows, onEmptyHTML: "Времяучёт не заполнен" };
   }
 
   // CHARTS

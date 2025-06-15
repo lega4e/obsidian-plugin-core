@@ -15,21 +15,25 @@ export default class TimeNotePrinter {
     const container = document.createElement(!little ? "div" : "span");
 
     const updateContent = () => {
-      const state = this.timeNoteHolder.state!;
-      const specified = this._calcSpecifiedIntervalMinutes();
-      const calculated = state.countedMinutes;
-      const missing = specified - calculated;
+      try {
+        const state = this.timeNoteHolder.state!;
+        const specified = this._calcSpecifiedIntervalMinutes();
+        const calculated = state.countedMinutes;
+        const missing = specified - calculated;
 
-      if (little) {
-        if (missing == 0) {
-          container.textContent = "";
-        } else {
-          container.textContent =
-            missing > 0
-              ? ` | -${formatMinutes(missing)}`
-              : ` | +${formatMinutes(-missing)}`;
+        if (little) {
+          if (missing == 0) {
+            container.textContent = "";
+          } else {
+            container.textContent =
+              missing > 0
+                ? ` | -${formatMinutes(missing)}`
+                : ` | +${formatMinutes(-missing)}`;
+          }
+
+          return;
         }
-      } else {
+
         container.innerHTML = `Итого: ${formatMinutes(calculated)}`;
         if (missing != 0) {
           container.innerHTML += `<br/>Должно: ${formatMinutes(specified)}`;
@@ -39,17 +43,21 @@ export default class TimeNotePrinter {
               : `<br/>Избыток: ${formatMinutes(-missing)}`;
         }
 
-        if (dayTime) {
-          const daysCount = this.categoryPagesHolder.state.filter(
-            (page) => page["Подъём"] && page["Отбой"]
-          ).length;
-
-          const averageDayTime = Math.round(specified / daysCount);
-          const averageSleepTime = 24 * 60 - averageDayTime;
-
-          container.innerHTML += `<br/>День: ${formatMinutes(averageDayTime)}`;
-          container.innerHTML += `<br/>Сон: ${formatMinutes(averageSleepTime)}`;
+        if (!dayTime) {
+          return;
         }
+
+        const daysCount = this.categoryPagesHolder.state.filter(
+          (page) => page["Подъём"] && page["Отбой"]
+        ).length;
+
+        const averageDayTime = Math.round(specified / daysCount);
+        const averageSleepTime = 24 * 60 - averageDayTime;
+
+        container.innerHTML += `<br/>День: ${formatMinutes(averageDayTime)}`;
+        container.innerHTML += `<br/>Сон: ${formatMinutes(averageSleepTime)}`;
+      } catch (e) {
+        container.innerHTML = "";
       }
     };
 

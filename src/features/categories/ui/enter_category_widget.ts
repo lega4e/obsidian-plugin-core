@@ -231,9 +231,12 @@ export default class EnterCategoryWidget {
   }
 
   private setShownState() {
+    const state = this.timeNoteHolder.state;
     this.container!.style.display =
-      this.timeNoteHolder.state!.missingMinutes == 0 &&
-      this.timeNoteHolder.state!.specifiedIntervalMinutes != null
+      state.missingMinutes == null ||
+      (state.missingMinutes == 0 &&
+        state.minutesStart != null &&
+        state.minutesEnd != null)
         ? "none"
         : "block";
   }

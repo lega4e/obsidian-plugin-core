@@ -5,7 +5,17 @@ export default class TableManager {
    * @param rows массив строк с данными
    * @returns HTML-элемент таблицы
    */
-  static makeTable(titles: string[], rows: string[][]): HTMLElement {
+  static makeTable(
+    titles: string[],
+    rows: string[][],
+    onEmptyHTML: string
+  ): HTMLElement {
+    if (rows.every((row) => row.length == 0)) {
+      const div = document.createElement("div");
+      div.innerHTML = onEmptyHTML;
+      return div;
+    }
+
     const table = document.createElement("table");
     table.style.borderCollapse = "collapse";
     table.style.width = "100%";

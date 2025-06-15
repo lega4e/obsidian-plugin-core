@@ -87,13 +87,13 @@ export default class TabsPrinter {
 
     if (tab.type === TabCategoriesType.table) {
       const tabTable = tab as TabCategoriesTable;
-      const { titles, rows } = this.categoriesPrinter.makeTable(
+      const { titles, rows, onEmptyHTML } = this.categoriesPrinter.makeTable(
         tabTable.packTypes,
         tabTable.avg
       );
       return {
         title: tabTable.title,
-        content: () => TableManager.makeTable(titles, rows),
+        content: () => TableManager.makeTable(titles, rows, onEmptyHTML),
       };
     }
 

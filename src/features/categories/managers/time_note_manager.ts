@@ -35,7 +35,7 @@ export default class TimeNoteManager {
       minutesEnd = this.timeToMinutes(page["Отбой"]);
     }
 
-    return {
+    const val = {
       fullIntervalMinutes,
       countedMinutes,
       specifiedIntervalMinutes,
@@ -43,6 +43,8 @@ export default class TimeNoteManager {
       minutesEnd,
       missingMinutes,
     };
+    console.log(val);
+    return val;
   }
 
   static calcDailyTotalTime(
