@@ -24,6 +24,7 @@ import CommentsAndCategoryScoreHolder from "src/features/categories/state/commen
 import CategoryScoreHolder from "src/features/categories/state/category_score_holder";
 import FrontmatterManager from "src/features/categories/managers/frontmatter_manager";
 import LazyDerivedValueNotifier from "src/utils/notifiers/lazy_derived_notifier";
+import FileObserver from "src/library/obsidian/FileObserver";
 
 export default class Di {
   app: App | null = null;
@@ -36,17 +37,38 @@ export default class Di {
 
   paramsConfigHolder = new ParamsConfigHolder(
     () => this.dv!,
+    () => this.app!,
     this.paramsConfigFileNameHolder
   );
 
   categoriesConfigHolder = new CategoriesConfigHolder(
     () => this.dv!,
+    () => this.app!,
     this.categoriesConfigFileNameHolder
   );
 
   tabsConfigHolder = new TabsConfigHolder(
     () => this.dv!,
+    () => this.app!,
     this.tabsConfigFileNameHolder
+  );
+
+  fileObserver = new FileObserver(
+    () => this.app!,
+    [
+      {
+        filename: () => this.paramsConfigFileNameHolder.state,
+        onModify: () => this.paramsConfigHolder.update(),
+      },
+      {
+        filename: () => this.categoriesConfigFileNameHolder.state,
+        onModify: () => this.categoriesConfigHolder.update(),
+      },
+      {
+        filename: () => this.tabsConfigFileNameHolder.state,
+        onModify: () => this.tabsConfigHolder.update(),
+      },
+    ]
   );
 
   // PAGES

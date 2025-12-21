@@ -1,13 +1,30 @@
-import { App, TFile } from "obsidian";
+import { App, normalizePath, TFile } from "obsidian";
 import * as jsyaml from "js-yaml";
 
-export default class YamlHeader<T extends Record<string, any>> {
+export default class YamlHeader {
   constructor(private app: () => App) {}
 
   /**
    * Получает текущий YAML-фронтматтер из файла.
    */
-  async get(file: TFile): Promise<T | null> {
+  async get<T extends Record<string, any>>(
+    rawFile: TFile | string
+  ): Promise<T | null> {
+    let file: TFile;
+    if (typeof rawFile === "string") {
+      const absFile = this.app().vault.getAbstractFileByPath(
+        normalizePath(rawFile)
+      );
+      if (absFile instanceof TFile) {
+        file = absFile;
+      } else {
+        console.error(`Can't find file '${rawFile}'`);
+        return null;
+      }
+    } else {
+      file = rawFile;
+    }
+
     const content = await this.app().vault.read(file);
     const yamlMatch = content.match(/^---\n([\s\S]+?)\n---/);
 
@@ -26,7 +43,10 @@ export default class YamlHeader<T extends Record<string, any>> {
   /**
    * Обновляет YAML-фронтматтер в файле.
    */
-  async update(file: TFile, newFrontmatter: T): Promise<void> {
+  async update<T extends Record<string, any>>(
+    file: TFile,
+    newFrontmatter: T
+  ): Promise<void> {
     let content = await this.app().vault.read(file);
     const yamlMatch = content.match(/^---\n([\s\S]+?)\n---/);
 

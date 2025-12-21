@@ -1,6 +1,15 @@
-import { Plugin, PluginSettingTab, Setting, App } from "obsidian";
+import {
+  Plugin,
+  PluginSettingTab,
+  Setting,
+  App,
+  normalizePath,
+  TFile,
+} from "obsidian";
 import DvApi from "src/domain/interfaces/dv_api";
 import Di from "src/domain/di/di";
+import YamlHeader from "src/library/obsidian/YamlHeader";
+import CategoriesYaml from "src/features/categories/models/categories_yaml";
 
 interface Lega4eCorePluginSettings {
   categories_path: string;
@@ -21,6 +30,7 @@ export default class Lega4eCorePlugin extends Plugin {
   async onload() {
     this.di = new Di();
     this.di.app = this.app;
+    this.di.fileObserver.init();
     await this.loadSettings();
     this.addSettingTab(new Lega4eCorePluginSettingTab(this.app, this));
     this.registerApi();
@@ -43,9 +53,6 @@ export default class Lega4eCorePlugin extends Plugin {
     (this.app as any).plugins.plugins["lega4e-core-plugin"].api = {
       init: (dv: DvApi) => {
         this.di.dv = dv;
-        this.di.categoriesConfigHolder.notify();
-        this.di.paramsConfigHolder.notify();
-        this.di.tabsConfigHolder.notify();
         this.di.calculatedCategoriesParamsSource.state = undefined;
       },
       api: () => this.di.api,

@@ -29,6 +29,12 @@ export default class LazyDerivedValueNotifier<
     return this._calculatedState!;
   }
 
+  set state(newState: T) {
+    this._calculatedState = newState;
+    this._shouldCalculate = false;
+    this.notify();
+  }
+
   dispose() {
     this.derivedListeners.forEach((listener) => listener());
   }
