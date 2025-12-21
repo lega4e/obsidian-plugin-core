@@ -2,6 +2,8 @@ import LazyDerivedValueNotifier from "src/utils/notifiers/lazy_derived_notifier"
 import CalculatedItemHolder from "./calculated_item_holder";
 import CategoryManager from "../managers/category_manager";
 import CategoriesHolder from "./categories_holder";
+import ValueNotifier from "src/utils/notifiers/value_notifier";
+import TabsConfigHolder from "src/features/tabs_printer/states/tabs_config_holder";
 
 export interface TimeUnit {
   certainCategory: string;
@@ -32,12 +34,29 @@ export interface CalculatedCategories {
 export default class CalculatedCategoriesHolder extends LazyDerivedValueNotifier<CalculatedCategories | null> {
   constructor(
     categoriesHolder: CategoriesHolder,
-    itemsHolder: CalculatedItemHolder
+    itemsHolder: CalculatedItemHolder,
+    paramsSource: ValueNotifier<string | undefined>,
+    tabsConfigHolder: TabsConfigHolder
   ) {
-    super([categoriesHolder, itemsHolder], () =>
-      categoriesHolder.state && itemsHolder.state
-        ? CategoryManager.calc(categoriesHolder.state, itemsHolder.state)
-        : null
+    super(
+      [categoriesHolder, itemsHolder, paramsSource, tabsConfigHolder],
+      () => {
+        const tabs = tabsConfigHolder.state;
+        let discardCommentsLevel = categoriesHolder.state?.discardCommentsLevel;
+        if (paramsSource.state !== undefined && tabs) {
+          discardCommentsLevel =
+            tabs.packs.find((pack) => pack.id === paramsSource.state)?.params
+              ?.discardCommentsLevel ?? discardCommentsLevel;
+        }
+
+        return categoriesHolder.state && itemsHolder.state
+          ? CategoryManager.calc(
+              categoriesHolder.state,
+              itemsHolder.state,
+              discardCommentsLevel!
+            )
+          : null;
+      }
     );
   }
 }

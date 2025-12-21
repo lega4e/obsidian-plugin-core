@@ -13,7 +13,8 @@ export default class ParamsPrinter {
 
   buildAveragesTable(): void {
     if (!this.params.state) {
-      throw new Error("Параметры не загружены!");
+      this.dv().el("div", "Параметров нет!");
+      return;
     }
 
     const headers = [
@@ -49,7 +50,9 @@ export default class ParamsPrinter {
 
   makeChart(): HTMLElement {
     if (!this.params.state) {
-      throw new Error("Параметры не загружены!");
+      const container = document.createElement("div");
+      container.textContent = "Параметров нет!";
+      return container;
     }
 
     return this.charts.line(

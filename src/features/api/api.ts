@@ -32,7 +32,8 @@ export default class Api {
     private commentPagesHolder: ValueNotifier<Record<string, any>[]>,
     private categoryScoreHolder: CategoryScoreHolder,
     private frontmatterManager: FrontmatterManager,
-    private timeNoteHolder: TimeNoteHolder
+    private timeNoteHolder: TimeNoteHolder,
+    private calculatedCategoriesParamsSource: ValueNotifier<string | undefined>
   ) {}
 
   // PAGES
@@ -48,6 +49,10 @@ export default class Api {
     this.paramPagesHolder.state = pages;
     this.previousParamPagesHolder.state = prevPages ?? [];
     this.nextParamPagesHolder.state = nextPages ?? [];
+  }
+
+  setCalculatedCategoriesParamsSource(paramsSource: string | undefined): void {
+    this.calculatedCategoriesParamsSource.state = paramsSource;
   }
 
   // TABS

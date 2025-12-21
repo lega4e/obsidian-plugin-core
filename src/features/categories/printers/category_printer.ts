@@ -7,6 +7,7 @@ import CalculatedCategoriesHolder, {
 import { formatMinutes } from "../models/item";
 import { CategoryPack } from "../models/category";
 import CategoryPagesHolder from "../state/category_pages_holder";
+import CategoriesOverridedByTabsHolder from "../state/categories_overrided_by_tabs_holder";
 
 export default class CategoryPrinter {
   constructor(
@@ -25,7 +26,8 @@ export default class CategoryPrinter {
 
   makeTable(
     packTypes: string[],
-    avg: boolean = false
+    avg: boolean = false,
+    source: "classic" | "tabs_overrided" = "classic"
   ): {
     titles: string[];
     rows: string[][];
@@ -120,6 +122,12 @@ export default class CategoryPrinter {
           cats.splice(catIndex, 0, newCat);
         }
       }
+    }
+
+    if (Object.keys(categories).length === 0) {
+      const container = document.createElement("div");
+      container.textContent = "График не заполнен!";
+      return container;
     }
 
     return this.charts.makeLineChart(

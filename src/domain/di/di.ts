@@ -117,9 +117,15 @@ export default class Di {
 
   commentsHolder = new AllCommentsHolder(this.commentsAndCategoryScoreHolder);
 
+  calculatedCategoriesParamsSource = new ValueNotifier<string | undefined>(
+    undefined
+  );
+
   calculatedCategoriesHolder = new CalculatedCategoriesHolder(
     this.categoriesHolder,
-    this.itemsHolder
+    this.itemsHolder,
+    this.calculatedCategoriesParamsSource,
+    this.tabsConfigHolder
   );
 
   categoriesPrinter = new CategoryPrinter(
@@ -177,6 +183,7 @@ export default class Di {
     this.commentPagesHolder,
     this.categoryScoreHolder,
     this.frontmatterManager,
-    this.timeNoteHolder
+    this.timeNoteHolder,
+    this.calculatedCategoriesParamsSource
   );
 }

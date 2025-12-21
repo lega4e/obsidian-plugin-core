@@ -77,6 +77,11 @@ export default class DiaryPagesManager {
       monthEnd = moment(filename, "YYYY-MM")
         .endOf("month")
         .format("YYYY-MM-DD");
+    } else if (filename.match(/\d{4}/)) {
+      monthStart = moment(filename, "YYYY")
+        .startOf("year")
+        .format("YYYY-MM-DD");
+      monthEnd = moment(filename, "YYYY").endOf("year").format("YYYY-MM-DD");
     } else {
       throw new Error("Can't get month edges");
     }

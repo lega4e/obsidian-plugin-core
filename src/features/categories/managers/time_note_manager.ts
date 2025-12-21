@@ -43,7 +43,6 @@ export default class TimeNoteManager {
       minutesEnd,
       missingMinutes,
     };
-    console.log(val);
     return val;
   }
 

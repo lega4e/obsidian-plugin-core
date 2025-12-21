@@ -6,6 +6,11 @@ export default interface TabsPrinterConfig {
 export interface TabPack {
   id: string;
   tabs: Tab[];
+  params?: TabPackParams;
+}
+
+export interface TabPackParams {
+  discardCommentsLevel: number;
 }
 
 export enum TabSource {

@@ -40,14 +40,13 @@ export default class Lega4eCorePlugin extends Plugin {
   }
 
   registerApi() {
-    console.log("Lega4eCorePlugin registerApi");
-
     (this.app as any).plugins.plugins["lega4e-core-plugin"].api = {
       init: (dv: DvApi) => {
         this.di.dv = dv;
         this.di.categoriesConfigHolder.notify();
         this.di.paramsConfigHolder.notify();
         this.di.tabsConfigHolder.notify();
+        this.di.calculatedCategoriesParamsSource.state = undefined;
       },
       api: () => this.di.api,
     };

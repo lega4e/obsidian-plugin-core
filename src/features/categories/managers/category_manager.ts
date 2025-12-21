@@ -12,7 +12,8 @@ export default class CategoryManager {
 
   static calc(
     categories: CategoriesState,
-    items: Item[]
+    items: Item[],
+    discardCommentsLevel: number
   ): CalculatedCategories {
     const averages: Record<string, CalculatedCategory> = {};
     const historyMap: Record<string, Record<string, CalculatedCategory>> = {}; // date -> category -> unit
@@ -20,10 +21,7 @@ export default class CategoryManager {
     let totalMinutes = 0;
 
     for (const item of items) {
-      const comment = this.discardComment(
-        item,
-        categories.discardCommentsLevel
-      );
+      const comment = this.discardComment(item, discardCommentsLevel);
 
       const certainCategory = categories.allCategories.get(item.categoryName);
       if (!certainCategory) {

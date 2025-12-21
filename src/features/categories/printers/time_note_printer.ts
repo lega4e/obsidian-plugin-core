@@ -5,6 +5,8 @@ import CategoryPagesHolder from "../state/category_pages_holder";
 import TimeNoteManager from "../managers/time_note_manager";
 
 export default class TimeNotePrinter {
+  private intervalId: number | null = null;
+
   constructor(
     private dv: () => DvApi,
     private timeNoteHolder: TimeNoteHolder,
@@ -66,7 +68,10 @@ export default class TimeNotePrinter {
     }
 
     updateContent();
-    setInterval(updateContent, 1000);
+    if (this.intervalId != null) {
+      clearInterval(this.intervalId);
+    }
+    this.intervalId = setInterval(updateContent, 500);
     this.dv().el(little ? "span" : "div", container);
   }
 
