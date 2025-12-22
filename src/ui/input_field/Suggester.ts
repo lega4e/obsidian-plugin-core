@@ -11,10 +11,17 @@ export default class Suggester<T> extends FuzzySuggestModal<T> {
     item2str: (item: T) => string,
     itemsGetter: () => T[],
     str2item?: (str: string) => T,
-    inputEqualsItem?: (input: string, item: T) => boolean
+    inputEqualsItem?: (input: string, item: T) => boolean,
+    initialValue?: string
   ) {
-    return new Suggester(app, item2str, itemsGetter, str2item, inputEqualsItem)
-      .promise;
+    return new Suggester(
+      app,
+      item2str,
+      itemsGetter,
+      str2item,
+      inputEqualsItem,
+      initialValue
+    ).promise;
   }
 
   public constructor(
@@ -22,7 +29,8 @@ export default class Suggester<T> extends FuzzySuggestModal<T> {
     private item2str: (item: T) => string,
     private itemsGetter: () => T[],
     private str2item?: (str: string) => T,
-    private inputEqualsItem?: (input: string, item: T) => boolean
+    private inputEqualsItem?: (input: string, item: T) => boolean,
+    initialValue?: string
   ) {
     super(app);
 
@@ -49,6 +57,8 @@ export default class Suggester<T> extends FuzzySuggestModal<T> {
     });
 
     this.open();
+    this.inputEl.value = initialValue ?? "";
+    this.inputEl.dispatchEvent(new Event("input"));
   }
 
   override getItemText(item: T): string {
@@ -79,7 +89,7 @@ export default class Suggester<T> extends FuzzySuggestModal<T> {
     super.selectSuggestion(value, evt);
   }
 
-  override onChooseItem(item: T, evt: MouseEvent | KeyboardEvent): void {
+  override onChooseItem(item: T, _: MouseEvent | KeyboardEvent): void {
     this.resolved = true;
     this.resolvePromise(item);
   }

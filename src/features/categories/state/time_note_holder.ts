@@ -18,7 +18,10 @@ export default class TimeNoteHolder extends LazyDerivedValueNotifier<TimeNoteSta
     pagesHolder: CategoryPagesHolder
   ) {
     super([itemsHolder, pagesHolder], () =>
-      TimeNoteManager.calc(itemsHolder.state, pagesHolder.state)
+      TimeNoteManager.calc(
+        itemsHolder.state,
+        pagesHolder.state.filter((page) => !!page)
+      )
     );
   }
 }

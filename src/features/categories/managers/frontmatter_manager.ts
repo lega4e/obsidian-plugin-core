@@ -6,7 +6,7 @@ import CategoriesHolder from "../state/categories_holder";
 import Item from "../models/item";
 
 export default class FrontmatterManager {
-  private yamlHeader = new YamlHeader<Record<string, any>>(this.app);
+  private yamlHeader = new YamlHeader(this.app);
 
   constructor(
     private app: () => App,
@@ -31,7 +31,7 @@ export default class FrontmatterManager {
 
         for (
           let i = entries.length - 1;
-          i >= Math.max(0, entries.length - 2);
+          i >= Math.max(0, entries.length - 3);
           --i
         ) {
           const lastEntry = ItemManager.parseEntry(

@@ -19,7 +19,7 @@ export default class CalculatedItemHolder extends LazyDerivedValueNotifier<
       ]) => {
         return categoryPages.state && categories.state
           ? ItemConfigManager.calc(
-              categoryPages.state,
+              categoryPages.state.filter((page) => !!page),
               categories.state,
               categories.state.itemsFieldName
             )

@@ -110,6 +110,7 @@ export default class EnterCategoryWidget {
     this.container!.appendChild(this.confirmButton);
     this.makeButton(" 🗑 ", () => this.onTrashClick());
 
+    console.log("create fast buttons separator");
     this.container!.createEl("div", {
       cls: "lega4e-fast-buttons-separator",
     });
@@ -237,7 +238,7 @@ export default class EnterCategoryWidget {
       (state.missingMinutes == 0 &&
         state.minutesStart != null &&
         state.minutesEnd != null)
-        ? "none"
+        ? "block"
         : "block";
   }
 }

@@ -124,13 +124,66 @@ export default class CategoryCharts {
     return chartContainer;
   }
 
+  private category2tip(
+    value: number,
+    totalMinutes: number,
+    category: CalculatedCategory[]
+  ): string[] {
+    const units = category.flatMap((cat) => cat.units);
+    const map = new Map<string, number>(); // certain category -> minutes
+
+    units.forEach((unit) => {
+      map.set(
+        unit.certainCategory,
+        (map.get(unit.certainCategory) ?? 0) + unit.minutes
+      );
+    });
+
+    const result = [
+      formatMinutes(value) +
+        "; " +
+        ((value / totalMinutes) * 100).toFixed(1).replace(".", ",") +
+        "%",
+    ];
+
+    const list = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+    list.forEach(([certainCategory, minutes]) => {
+      const filteredUnits = units
+        .filter((unit) => unit.certainCategory == certainCategory)
+        .sort((a, b) => b.minutes - a.minutes);
+
+      if (filteredUnits.length == 0) {
+        return;
+      }
+
+      if (filteredUnits.length == 1) {
+        const unit = filteredUnits[0];
+        const comment =
+          unit.comment && unit.comment != "" ? ` (${unit.comment})` : "";
+        result.push(
+          unit.certainCategory + comment + " " + formatMinutes(unit.minutes)
+        );
+        return;
+      }
+
+      result.push(certainCategory + " " + formatMinutes(minutes));
+      filteredUnits.forEach((unit) => {
+        const comment =
+          unit.comment && unit.comment != "" ? ` ${unit.comment}` : " *empty*";
+        result.push(" └ " + comment + " " + formatMinutes(unit.minutes));
+      });
+    });
+
+    return result;
+  }
+
   /**
    * Форматирует значение в виде строки с процентным соотношением.
    * @param value значение для форматирования (одной категории в целом).
    * @param totalMinutes общее значение для вычисления процента.
    * @returns Строка с отформатированным значением и процентом.
    */
-  private category2tip(
+  private category2tipLegacy(
     value: number,
     totalMinutes: number,
     category: CalculatedCategory[]

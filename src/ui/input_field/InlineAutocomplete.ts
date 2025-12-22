@@ -46,12 +46,14 @@ export default class InlineAutocomplete<T> {
   private async showSuggestions() {
     const suggestions = await this.config.suggestions();
 
+    console.log("showSuggestions", this.inputField.value);
     this.value = await Suggester.suggest<T>(
       this.app,
       this.config.item2suggestion,
       () => suggestions,
       this.config.str2item,
-      this.config.inputEqualsItem
+      this.config.inputEqualsItem,
+      this.inputField.value
     );
 
     if (this.value) {
