@@ -24,7 +24,6 @@ export default class CategoriesConfigHolder extends LazyDerivedValueNotifier<Cat
 
       const file = dv().page(path.state);
       if (!file) {
-        console.error(`Can't find file '${path.state}'`);
         return null;
       }
 

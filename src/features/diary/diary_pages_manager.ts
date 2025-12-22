@@ -177,6 +177,16 @@ export default class DiaryPagesManager {
     return currentDate.subtract(1, "day").format("YYYY-MM-DD");
   }
 
+  yearBeforeDayPageName(filename: string): string {
+    const match = filename.match(/(\d{4})-(\d{2}-\d{2})/);
+    if (!match) {
+      throw new Error("Can't get year page name");
+    }
+
+    const year = parseInt(match[1]) - 1;
+    return `${year}-${match[2]}`;
+  }
+
   weekPageName(filename: string): string {
     if (filename.match(/\d{4}-\d{2}-\d{2}/)) {
       const week = moment(filename, "YYYY-MM-DD").format("YYYY-[W]WW");

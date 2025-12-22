@@ -1,15 +1,6 @@
-import {
-  Plugin,
-  PluginSettingTab,
-  Setting,
-  App,
-  normalizePath,
-  TFile,
-} from "obsidian";
+import { Plugin, PluginSettingTab, Setting, App } from "obsidian";
 import DvApi from "src/domain/interfaces/dv_api";
 import Di from "src/domain/di/di";
-import YamlHeader from "src/library/obsidian/YamlHeader";
-import CategoriesYaml from "src/features/categories/models/categories_yaml";
 
 interface Lega4eCorePluginSettings {
   categories_path: string;

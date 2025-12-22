@@ -22,7 +22,6 @@ export default class ParamsConfigHolder extends LazyDerivedValueNotifier<ParamsY
 
       const file = dv().page(path.state);
       if (!file) {
-        console.error(`Can't find file '${path}'`);
         return null;
       }
 

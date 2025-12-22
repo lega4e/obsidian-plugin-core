@@ -24,7 +24,6 @@ export default class TabsConfigHolder extends LazyDerivedValueNotifier<TabsPrint
 
       const file = dv().page(pathHolder.state);
       if (!file) {
-        console.error(`Can't find file '${pathHolder.state}'`);
         return null;
       }
 
